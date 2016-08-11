@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.IO;
@@ -6,7 +9,9 @@ using System.Linq;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
+using SqlBulkTools.IntegrationTests.Data;
 using SqlBulkTools.IntegrationTests.Model;
+using TestContext = SqlBulkTools.IntegrationTests.Data.TestContext;
 
 namespace SqlBulkTools.IntegrationTests
 {
@@ -25,7 +30,8 @@ namespace SqlBulkTools.IntegrationTests
         {
             _db = new TestContext();
             _randomizer = new BookRandomizer();
-            Database.SetInitializer(new DropCreateDatabaseAlways<TestContext>());
+            Database.SetInitializer(new DatabaseInitialiser());
+            _db.Database.Initialize(true);
             DeleteLogFile();
         }
 
@@ -456,7 +462,7 @@ namespace SqlBulkTools.IntegrationTests
 
             for (int i = 0; i < 30; i++)
             {
-                conflictingSchemaCol.Add(new SchemaTest2() { ColumnA = "ColumnA " + i});
+                conflictingSchemaCol.Add(new SchemaTest2() { ColumnA = "ColumnA " + i });
             }
 
             // Act            
@@ -507,7 +513,7 @@ namespace SqlBulkTools.IntegrationTests
             var allItems = _db.SchemaTest1.ToList();
 
             bulk.Setup<SchemaTest1>(x => x.ForCollection(allItems))
-                .WithTable("SchemaTest") 
+                .WithTable("SchemaTest")
                 .AddColumn(x => x.Id)
                 .BulkDelete()
                 .MatchTargetOn(x => x.Id);
@@ -562,7 +568,7 @@ namespace SqlBulkTools.IntegrationTests
 
             for (int i = 0; i < 30; i++)
             {
-                col.Add(new CustomColumnMappingTest() { NaturalId = i, ColumnXIsDifferent = "ColumnX " + i, ColumnYIsDifferentInDatabase = i});
+                col.Add(new CustomColumnMappingTest() { NaturalId = i, ColumnXIsDifferent = "ColumnX " + i, ColumnYIsDifferentInDatabase = i });
             }
 
             _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
@@ -591,7 +597,7 @@ namespace SqlBulkTools.IntegrationTests
 
             for (int i = 0; i < 30; i++)
             {
-                list.Add(new ReservedColumnNameTest() {Key = i});
+                list.Add(new ReservedColumnNameTest() { Key = i });
             }
 
             bulk.Setup<ReservedColumnNameTest>(x => x.ForCollection(list))
@@ -608,51 +614,94 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
-        public void SqlBulkTools_BulkInsertOrUpdate_DecimalValueCorrectlySet()
-        {
-
-            _db.Books.RemoveRange(_db.Books.ToList());
-            _db.SaveChanges();
-
-            decimal? expectedPrice = (decimal?)1.33;
-
-            BulkOperations bulk = new BulkOperations();
-            List<Book> books = new List<Book>() { new Book() { Description = "Test", ISBN = "12345678910", Price = expectedPrice } };
-
-            bulk.Setup<Book>(x => x.ForCollection(books))                
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsertOrUpdate()
-                .MatchTargetOn(x => x.ISBN)
-                .SetIdentityColumn(x => x.Id);
-
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            Assert.AreEqual(_db.Books.First().Price, expectedPrice);
-
-        }
-
-        [Test]
-        public void SqlBulkTools_BulkInsertOrUpdae_FloatValueCorrectlySet()
+        public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
         {
             _db.Books.RemoveRange(_db.Books.ToList());
             _db.SaveChanges();
 
-            float? expectedFloat = (float?)1.33;
+            var todaysDate = DateTime.Today;
+            Guid guid = Guid.NewGuid();
 
             BulkOperations bulk = new BulkOperations();
-            List<Book> books = new List<Book>() { new Book() { Description = "Test", ISBN = "12345678910", Price = 30, TestFloat = expectedFloat} };
+            List<TestDataType> dataTypeTest = new List<TestDataType>()
+            {
+                new TestDataType()
+                {
+                    BigIntTest = 342324324324324324,
+                    TinyIntTest = 126,
+                    DateTimeTest = todaysDate,
+                    DateTime2Test = new DateTime(2008, 12, 12, 10, 20, 30),
+                    DateTest = new DateTime(2007, 7, 5, 20, 30, 10),
+                    TimeTest = new TimeSpan(23, 32, 23),
+                    SmallDateTimeTest = new DateTime(2005, 7, 14),
+                    BinaryTest = new byte[] {0, 3, 3, 2, 4, 3},
+                    VarBinaryTest = new byte[] {3, 23, 33, 243},
+                    DecimalTest = 178.43M,
+                    MoneyTest = 24333.99M,
+                    SmallMoneyTest = 103.32M,
+                    RealTest = 32.53F,
+                    NumericTest = 154343.3434342M,
+                    FloatTest = 232.43F,
+                    FloatTest2 = 43243.34,
+                    TextTest = "This is some text.",
+                    GuidTest = guid,
+                    CharTest = "SomeText",
+                    XmlTest = "<title>The best SQL Bulk tool</title>",
+                    NCharTest = "SomeText",
+                    ImageTest = new byte[] {3,3,32,4}
+                }
+            };
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
-                .WithTable("Books")
+            bulk.Setup<TestDataType>(x => x.ForCollection(dataTypeTest))
+                .WithTable("TestDataTypes")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
-                .MatchTargetOn(x => x.ISBN)
-                .SetIdentityColumn(x => x.Id);
+                .MatchTargetOn(x => x.TimeTest);
 
             bulk.CommitTransaction("SqlBulkToolsTest");
 
-            Assert.AreEqual(_db.Books.First().TestFloat, expectedFloat);
+
+            using (
+                var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["SqlBulkToolsTest"].ConnectionString)
+                )
+            using (var command = new SqlCommand("SELECT TOP 1 * FROM [dbo].[TestDataTypes]", conn)
+            {
+                CommandType = CommandType.Text
+            })
+            {
+                conn.Open();
+
+                using (var reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        Assert.AreEqual(232.43F, reader["FloatTest"]);
+                        Assert.AreEqual(43243.34, reader["FloatTest2"]);
+                        Assert.AreEqual(178.43M, reader["DecimalTest"]);
+                        Assert.AreEqual(24333.99M, reader["MoneyTest"]);
+                        Assert.AreEqual(103.32M, reader["SmallMoneyTest"]);
+                        Assert.AreEqual(32.53M, reader["RealTest"]);
+                        Assert.AreEqual(154343.3434342M, reader["NumericTest"]);
+                        Assert.AreEqual(todaysDate, reader["DateTimeTest"]);
+                        Assert.AreEqual(new DateTime(2008, 12, 12, 10, 20, 30), reader["DateTime2Test"]);
+                        Assert.AreEqual(new DateTime(2005, 7, 14), reader["SmallDateTimeTest"]);
+                        Assert.AreEqual(new DateTime(2007, 7, 5), reader["DateTest"]);
+                        Assert.AreEqual(new TimeSpan(23, 32, 23), reader["TimeTest"]);
+                        Assert.AreEqual(guid, reader["GuidTest"]);
+                        Assert.AreEqual("This is some text.", reader["TextTest"]);
+                        Assert.AreEqual("SomeText", reader["CharTest"].ToString().Trim());
+                        Assert.AreEqual(126, reader["TinyIntTest"]);
+                        Assert.AreEqual(342324324324324324, reader["BigIntTest"]);
+                        Assert.AreEqual("<title>The best SQL Bulk tool</title>", reader["XmlTest"]);
+                        Assert.AreEqual("SomeText", reader["NCharTest"].ToString().Trim());
+                        Assert.AreEqual(new byte[] { 3, 3, 32, 4 }, reader["ImageTest"]);
+                        Assert.AreEqual(new byte[] { 0, 3, 3, 2, 4, 3 }, reader["BinaryTest"]);
+                        Assert.AreEqual(new byte[] { 3, 23, 33, 243 }, reader["VarBinaryTest"]);
+                    }
+                }
+            }
+
+
         }
 
 

@@ -1,7 +1,7 @@
 ﻿using System.Data.Entity;
 using SqlBulkTools.IntegrationTests.Model;
 
-namespace SqlBulkTools.IntegrationTests
+namespace SqlBulkTools.IntegrationTests.Data
 {
     public class TestContext : DbContext 
     {

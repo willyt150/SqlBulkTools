@@ -27,7 +27,8 @@ namespace SqlBulkTools
         {
             Dictionary<string, string> actualColumns = new Dictionary<string, string>();
             Dictionary<string, string> actualColumnsMaxCharLength = new Dictionary<string, string>();
-            Dictionary<string, PrecisionType> actualColumnsPrecision = new Dictionary<string, PrecisionType>();
+            Dictionary<string, PrecisionType> actualColumnsNumericPrecision = new Dictionary<string, PrecisionType>();
+            Dictionary<string, string> actualColumnsDateTimePrecision = new Dictionary<string, string>();
 
 
             foreach (DataRow row in schema.Rows)
@@ -39,11 +40,16 @@ namespace SqlBulkTools
 
                 if (columnType == "varchar" || columnType == "nvarchar" || 
                     columnType == "char" || columnType == "binary" || 
-                    columnType == "varbinary")
+                    columnType == "varbinary" || columnType == "nchar")
 
                 {
                     actualColumnsMaxCharLength.Add(row["COLUMN_NAME"].ToString(),
                         row["CHARACTER_MAXIMUM_LENGTH"].ToString());
+                }
+
+                if (columnType == "datetime2" || columnType == "time")
+                {
+                    actualColumnsDateTimePrecision.Add(row["COLUMN_NAME"].ToString(), row["DATETIME_PRECISION"].ToString());
                 }
 
                 if (columnType == "numeric" || columnType == "decimal")
@@ -53,7 +59,7 @@ namespace SqlBulkTools
                         NumericPrecision = row["NUMERIC_PRECISION"].ToString(),
                         NumericScale = row["NUMERIC_SCALE"].ToString()
                     };
-                    actualColumnsPrecision.Add(columnName, p);
+                    actualColumnsNumericPrecision.Add(columnName, p);
                 }
 
             }
@@ -72,7 +78,8 @@ namespace SqlBulkTools
                 if (actualColumns.TryGetValue(column, out columnType))
                 {
                     columnType = GetVariableCharType(column, columnType, actualColumnsMaxCharLength);
-                    columnType = GetDecimalPrecisionAndScaleType(column, columnType, actualColumnsPrecision);
+                    columnType = GetDecimalPrecisionAndScaleType(column, columnType, actualColumnsNumericPrecision);
+                    columnType = GetDateTimePrecisionType(column, columnType, actualColumnsDateTimePrecision);
                 }
 
                 paramList.Add("[" + column + "]" + " " + columnType);
@@ -93,7 +100,9 @@ namespace SqlBulkTools
 
         private string GetVariableCharType(string column, string columnType, Dictionary<string, string> actualColumnsMaxCharLength)
         {
-            if (columnType == "varchar" || columnType == "nvarchar")
+            if (columnType == "varchar" || columnType == "nvarchar" ||
+                    columnType == "char" || columnType == "binary" ||
+                    columnType == "varbinary" || columnType == "nchar")
             {
                 string maxCharLength;
                 if (actualColumnsMaxCharLength.TryGetValue(column, out maxCharLength))
@@ -117,6 +126,21 @@ namespace SqlBulkTools
                 if (actualColumnsPrecision.TryGetValue(column, out p))
                 {
                     columnType = columnType + "(" + p.NumericPrecision + ", " + p.NumericScale + ")";
+                }
+            }
+
+            return columnType;
+        }
+
+        private string GetDateTimePrecisionType(string column, string columnType, Dictionary<string, string> actualColumnsDateTimePrecision)
+        {
+            if (columnType == "datetime2" || columnType == "time")
+            {
+                string dateTimePrecision;
+                if (actualColumnsDateTimePrecision.TryGetValue(column, out dateTimePrecision))
+                {
+
+                    columnType = columnType + "(" + dateTimePrecision + ")";
                 }
             }
 
@@ -448,8 +472,11 @@ namespace SqlBulkTools
 
             for (int i = 0; i < props.Length; i++)
             {
-                var type2 = props[i].GetType();
-                if (props[i].PropertyType.IsValueType || props[i].PropertyType == typeof(string))
+                if (props[i].PropertyType.IsValueType || 
+                    props[i].PropertyType == typeof(string) || 
+                    props[i].PropertyType == typeof(byte) ||
+                     props[i].PropertyType == typeof(byte[])
+                    )
                 {
                     columns.Add(props[i].Name);
                 }

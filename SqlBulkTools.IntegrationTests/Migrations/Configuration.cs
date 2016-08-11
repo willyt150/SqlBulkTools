@@ -1,3 +1,5 @@
+using SqlBulkTools.IntegrationTests.Data;
+
 namespace SqlBulkTools.IntegrationTests.Migrations
 {
     using System;
