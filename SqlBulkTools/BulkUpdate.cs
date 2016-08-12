@@ -33,7 +33,7 @@ namespace SqlBulkTools
         private readonly bool _disableAllIndexes;
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
         private readonly BulkOperations _ext;
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private readonly Dictionary<int, T> _outputIdentityDic;
         private ColumnDirection _outputIdentity;
 
@@ -74,7 +74,7 @@ namespace SqlBulkTools
             _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
             _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
             _bulkCopyBatchSize = bulkCopyBatchSize;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _matchTargetOn = new List<string>();
             _identityColumn = null;
             _ext = ext;           

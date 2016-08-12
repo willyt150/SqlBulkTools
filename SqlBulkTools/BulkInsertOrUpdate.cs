@@ -33,7 +33,7 @@ namespace SqlBulkTools
         private readonly int? _bulkCopyBatchSize;
         private readonly bool _disableAllIndexes;
         private readonly BulkOperations _ext;
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private bool _deleteWhenNotMatchedFlag;
         private readonly HashSet<string> _disableIndexList;
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
@@ -76,7 +76,7 @@ namespace SqlBulkTools
             _bulkCopyBatchSize = bulkCopyBatchSize;
             _outputIdentity = ColumnDirection.Input;
             _deleteWhenNotMatchedFlag = false;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _outputIdentityDic = new Dictionary<int, T>();
             _disableIndexList = disableIndexList;
             _matchTargetOn = new List<string>();

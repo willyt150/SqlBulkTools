@@ -14,7 +14,7 @@ namespace SqlBulkTools
     {
         private readonly IEnumerable<T> _list;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private readonly HashSet<string> _columns;
 
 
@@ -25,7 +25,7 @@ namespace SqlBulkTools
         /// <param name="columns"></param>
         public DataTableColumnSelect(IEnumerable<T> list, HashSet<string> columns)
         {
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _list = list;
             _columns = columns;
             CustomColumnMappings = new Dictionary<string, string>();
@@ -61,10 +61,9 @@ namespace SqlBulkTools
         /// Returns a data table to be used in a stored procedure. 
         /// </summary>
         /// <returns></returns>
-        /// <exception cref="NotImplementedException"></exception>
-        public DataTable ToDataTable()
+        public DataTableTools<T> PrepareDataTable()
         {
-            return _helper.CreateDataTable<T>( _columns, CustomColumnMappings);
+            return new DataTableTools<T>(_columns, CustomColumnMappings);
         }
 
     }

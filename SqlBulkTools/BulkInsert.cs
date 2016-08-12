@@ -24,7 +24,7 @@ namespace SqlBulkTools
         private readonly string _sourceAlias;
         private readonly string _targetAlias;
         private readonly BulkOperations _ext;
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _bulkCopyTimeout;
         private readonly bool _bulkCopyEnableStreaming;
@@ -64,7 +64,7 @@ namespace SqlBulkTools
             _columns = columns;
             _sourceAlias = sourceAlias;
             _targetAlias = targetAlias;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _updateOnList = new List<string>();
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;

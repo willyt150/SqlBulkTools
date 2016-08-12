@@ -23,7 +23,7 @@ namespace SqlBulkTools
         private readonly int? _bulkCopyBatchSize;
         private readonly BulkOperations _ext;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private readonly HashSet<string> _columns;
         private bool _disableAllIndexes;
         private readonly HashSet<string> _disableIndexList;
@@ -50,7 +50,7 @@ namespace SqlBulkTools
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext)
         {
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _disableAllIndexes = false;
             _disableIndexList = new HashSet<string>();
             _list = list;

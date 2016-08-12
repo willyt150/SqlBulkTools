@@ -1,5 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data;
 using NUnit.Framework;
+using SqlBulkTools.IntegrationTests.Model;
 using SqlBulkTools.UnitTests.Model;
 
 namespace SqlBulkTools.UnitTests
@@ -13,7 +16,7 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId", "FK_BusinessId", "AddressId" };
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
@@ -27,7 +30,7 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId", "FK_BusinessId" };
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
@@ -41,7 +44,7 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId" };
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
@@ -57,7 +60,7 @@ namespace SqlBulkTools.UnitTests
             var updateOrInsertColumns = GetTestColumns();
             var expected =
                 "UPDATE SET [Target].[id] = [Source].[id], [Target].[Name] = [Source].[Name], [Target].[Town] = [Source].[Town], [Target].[Email] = [Source].[Email], [Target].[IsCool] = [Source].[IsCool] ";
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
@@ -76,7 +79,7 @@ namespace SqlBulkTools.UnitTests
 
             var expected =
                 "UPDATE SET [Target].[Id] = [Source].[Id] ";
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
@@ -93,7 +96,7 @@ namespace SqlBulkTools.UnitTests
             var updateOrInsertColumns = GetTestColumns();
             var expected =
                 "INSERT ([Name], [Town], [Email], [IsCool]) values ([Source].[Name], [Source].[Town], [Source].[Email], [Source].[IsCool])";
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildInsertSet(updateOrInsertColumns, "Source", "id");
@@ -112,7 +115,7 @@ namespace SqlBulkTools.UnitTests
             var tableName = "TableName";
 
             var expected = "INSERT INTO TableName ([Id]) ";
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildInsertIntoSet(columns, null, tableName);
@@ -129,7 +132,7 @@ namespace SqlBulkTools.UnitTests
             var expected =
                 "INSERT INTO TableName ([Name], [Town], [Email], [IsCool]) ";
 
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildInsertIntoSet(columns, "id", tableName);
@@ -147,7 +150,7 @@ namespace SqlBulkTools.UnitTests
             updateOrInsertColumns.Add("Id");
             var expected =
                 "INSERT ([Id]) values ([Source].[Id])";
-            var sut = new BulkOperationsHelpers();
+            var sut = new BulkOperationsHelper();
 
             // Act
             var result = sut.BuildInsertSet(updateOrInsertColumns, "Source", null);
@@ -161,7 +164,7 @@ namespace SqlBulkTools.UnitTests
         public void BulkOperationsHelpers_GetAllValueTypeAndStringColumns_ReturnsCorrectSet()
         {
             // Arrange
-            BulkOperationsHelpers helper = new BulkOperationsHelpers();
+            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> expected = new HashSet<string>() {"Title", "CreatedTime", "BoolTest", "IntegerTest", "Price"};
 
             // Act
@@ -172,12 +175,12 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BuilOperationsHelpers_GetIndexManagementCmd_WhenDisableAllIndexesIsTrueReturnsCorrectCmd()
+        public void BulkOperationsHelpers_GetIndexManagementCmd_WhenDisableAllIndexesIsTrueReturnsCorrectCmd()
         {
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books'; EXEC(@sql);";
-            BulkOperationsHelpers helper = new BulkOperationsHelpers();
+            BulkOperationsHelper helper = new BulkOperationsHelper();
 
             // Act
             string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", null, true);
@@ -188,12 +191,12 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BuilOperationsHelpers_GetIndexManagementCmd_WithOneIndexReturnsCorrectCmd()
+        public void BulkOperationsHelpers_GetIndexManagementCmd_WithOneIndexReturnsCorrectCmd()
         {
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title'; EXEC(@sql);";
-            BulkOperationsHelpers helper = new BulkOperationsHelpers();
+            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
 
@@ -206,11 +209,11 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BuildOperationsHelpers_RebuildSchema_WithExplicitSchemaIsCorrect()
+        public void BulkOperationsHelpers_RebuildSchema_WithExplicitSchemaIsCorrect()
         {
             // Arrange
             string expected = "[db].[CustomSchemaName].[TableName]";
-            BulkOperationsHelpers helper = new BulkOperationsHelpers();
+            BulkOperationsHelper helper = new BulkOperationsHelper();
 
             // Act
             string result = helper.GetFullQualifyingTableName("db", "CustomSchemaName", "TableName");
@@ -220,12 +223,12 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BuilOperationsHelpers_GetIndexManagementCmd_WithListOfIndexesReturnsCorrectCmd()
+        public void BulkOperationsHelpers_GetIndexManagementCmd_WithListOfIndexesReturnsCorrectCmd()
         {
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title' AND sys.indexes.name = 'IX_Price'; EXEC(@sql);";
-            BulkOperationsHelpers helper = new BulkOperationsHelpers();
+            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
             indexes.Add("IX_Price");
@@ -238,7 +241,71 @@ namespace SqlBulkTools.UnitTests
 
         }
 
+        [Test]
+        public void DataTableTools_GetColumn_RetrievesColumn()
+        {
+            // Arrange
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+            var expected1 = "ISBN";
+            var expected2 = "Price";    
 
+            // Act
+            var result1 = dtTools.GetColumn(x => x.ISBN);
+            var result2 = dtTools.GetColumn(x => x.Price);
+
+            // Assert
+            Assert.AreEqual(expected1, result1);
+            Assert.AreEqual(expected2, result2);
+        }
+
+        [Test]
+        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnNotFound()
+        {
+            // Arrange
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+
+            // Act and Assert
+            Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
+        }
+
+        [Test]
+        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnsIsNull()
+        {
+            // Arrange
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, null);
+
+            // Act and Assert
+            Assert.Throws<NullReferenceException>(() => dtTools.GetColumn(x => x.ISBN));
+
+        }
+
+        [Test]
+        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnMappingNotFound()
+        {
+            // Arrange
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+
+            Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
+        }
+
+        [Test]
+        public void DataTableTools_GetColumn_CustomColumnMapsCorrectly()
+        {
+            // Arrange
+            Dictionary<string, string> CustomColumns = new Dictionary<string, string>()
+            { {"PublishDate", "PublishingDate"} };
+
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), CustomColumns);
+            var expected = "PublishingDate";
+
+
+            // Act
+            var result = dtTools.GetColumn(x => x.PublishDate);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+
+        }
 
         private HashSet<string> GetTestColumns()
         {
@@ -249,6 +316,19 @@ namespace SqlBulkTools.UnitTests
             parameters.Add("Town");
             parameters.Add("Email");
             parameters.Add("IsCool");
+
+            return parameters;
+        }
+
+        private HashSet<string> GetBookColumns()
+        {
+            HashSet<string> parameters = new HashSet<string>();
+
+            parameters.Add("Id");
+            parameters.Add("ISBN");
+            parameters.Add("Title");            
+            parameters.Add("PublishDate");
+            parameters.Add("Price");
 
             return parameters;
         } 

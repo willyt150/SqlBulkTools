@@ -14,7 +14,7 @@ namespace SqlBulkTools
         private HashSet<string> Columns { get; set; }
         private List<string> UpdateOnList { get; set; }
         private List<string> DeleteOnList { get; set; }
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private string _schema;
         private readonly string _tableName;
         private readonly string _sourceAlias;
@@ -42,7 +42,7 @@ namespace SqlBulkTools
             _bulkCopyBatchSize = null;
             _bulkCopyNotifyAfter = null;
             _bulkCopyEnableStreaming = false;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _tableName = tableName;
             _sourceAlias = sourceAlias;
             _targetAlias = targetAlias;

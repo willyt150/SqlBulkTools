@@ -12,7 +12,7 @@ namespace SqlBulkTools
     /// </summary>
     public class DataTable<T>
     {
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private HashSet<string> Columns { get; set; }
         private readonly IEnumerable<T> _list;
 
@@ -21,7 +21,7 @@ namespace SqlBulkTools
         /// </summary>
         public DataTable(IEnumerable<T> list)
         {
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _list = list;            
             Columns = new HashSet<string>();
         }

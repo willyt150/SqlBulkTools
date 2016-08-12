@@ -22,7 +22,7 @@ namespace SqlBulkTools
         private readonly List<string> _matchTargetOn;
         private readonly string _sourceAlias;
         private readonly string _targetAlias;
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly int _bulkCopyTimeout;
@@ -75,7 +75,7 @@ namespace SqlBulkTools
             _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
             _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
             _bulkCopyBatchSize = bulkCopyBatchSize;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _sqlBulkCopyOptions = sqlBulkCopyOptions;            
             _ext = ext;
             _identityColumn = null;

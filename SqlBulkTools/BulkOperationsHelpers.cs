@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("SqlBulkTools.IntegrationTests")]
 namespace SqlBulkTools
 {
-    internal class BulkOperationsHelpers
+    internal class BulkOperationsHelper
     {
         internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
         {
@@ -211,6 +211,9 @@ namespace SqlBulkTools
 
         internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings, List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
         {
+            if (columns == null)
+                return null;
+
             DataTable dataTable = new DataTable(typeof(T).Name);
 
             if (matchOnColumns != null)
@@ -228,7 +231,7 @@ namespace SqlBulkTools
 
             foreach (var column in columns.ToList())
             {
-                if (columnMappings.ContainsKey(column))
+                if (columnMappings != null && columnMappings.ContainsKey(column))
                 {
                     dataTable.Columns.Add(columnMappings[column]);
                 }

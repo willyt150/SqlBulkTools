@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
 using SqlBulkTools.IntegrationTests.Model;
+using System.Configuration;
 
 namespace SqlBulkTools.IntegrationTests
 {
@@ -767,38 +768,28 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
-        public void SqlBulkTools_BulkInsertOrUpdate_DecimalValueCorrectlySet()
-        {
-
-            _db.Books.RemoveRange(_db.Books.ToList());
-            _db.SaveChanges();
-
-            decimal? price = (decimal?) 1.33;
-
-            BulkOperations bulk = new BulkOperations();
-            List<Book> books = new List<Book>() {new Book() {Description = "Test", ISBN = "12345678910", Price = price } };
-
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsertOrUpdate()
-                .MatchTargetOn(x => x.ISBN)
-                .SetIdentityColumn(x => x.Id);
-
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            Assert.AreEqual(_db.Books.First().Price, price);
-
-        }
-
-        [Test]
         public void SqlBulkTools_BulkDeleteWithSelectedColumns_TestIdentityOutput()
         {
 
-            // Reset Identity CMD: DBCC CHECKIDENT ('[TestTable]', RESEED, 0);
+            using (
+                var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["SqlBulkToolsTest"].ConnectionString)
+                )
+            using (var command = new SqlCommand(
+                @"IF (NOT EXISTS (SELECT * 
+                 FROM INFORMATION_SCHEMA.TABLES 
+                 WHERE TABLE_NAME = '[dbo].[Books]'))
+                 BEGIN 
+                 DBCC CHECKIDENT ('[dbo].[Books]', RESEED, 0); 
+                 END", conn) 
+            {
+                CommandType = CommandType.Text
+            })
+            {
+                conn.Open();
+                command.ExecuteNonQuery();
+            }           
 
-            List<Book> books = _randomizer.GetRandomCollection(30);
+        List<Book> books = _randomizer.GetRandomCollection(30);
             BulkDelete(_db.Books.ToList());
             BulkInsert(books);
 
@@ -859,12 +850,12 @@ namespace SqlBulkTools.IntegrationTests
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Price)
                 .AddColumn(x => x.PublishDate)
-                .ToDataTable();
+                .PrepareDataTable();
 
-            Assert.AreEqual("ISBN", test.Columns[0].ColumnName);
-            Assert.AreEqual("Price", test.Columns[1].ColumnName);
-            Assert.AreEqual("PublishDate", test.Columns[2].ColumnName);
-            Assert.AreEqual(typeof(DateTime), test.Columns[2].DataType);
+            Assert.AreEqual("ISBN", test.DataTable.Columns[0].ColumnName);
+            Assert.AreEqual("Price", test.DataTable.Columns[1].ColumnName);
+            Assert.AreEqual("PublishDate", test.DataTable.Columns[2].ColumnName);
+            Assert.AreEqual(typeof(DateTime), test.DataTable.Columns[2].DataType);
         }
 
         private void AppendToLogFile(string text)
