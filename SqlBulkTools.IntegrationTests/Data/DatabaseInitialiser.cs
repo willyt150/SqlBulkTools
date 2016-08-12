@@ -24,7 +24,7 @@ namespace SqlBulkTools.IntegrationTests.Data
                 conn.Open();
                 command.CommandText = @"IF (NOT EXISTS (SELECT * 
                  FROM INFORMATION_SCHEMA.TABLES 
-                 WHERE TABLE_NAME = 'TheTable'))
+                 WHERE TABLE_NAME = '[dbo].[TestDataTypes]'))
                  BEGIN
                      CREATE TABLE [dbo].[TestDataTypes]
                     (
