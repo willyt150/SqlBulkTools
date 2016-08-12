@@ -14,27 +14,21 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class BulkInsert<T> : ITransaction
+    public class BulkInsert<T> : AbstractOperation<T>, ITransaction
     {
         private readonly IEnumerable<T> _list;
         private readonly string _tableName;
         private readonly string _schema;
         private readonly HashSet<string> _columns;
         private readonly List<string> _updateOnList;
-        private readonly string _sourceAlias;
-        private readonly string _targetAlias;
-        private readonly BulkOperations _ext;
-        private readonly BulkOperationsHelper _helper;
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _bulkCopyTimeout;
         private readonly bool _bulkCopyEnableStreaming;
         private readonly int? _bulkCopyNotifyAfter;
         private readonly int? _bulkCopyBatchSize;
         private readonly HashSet<string> _disableIndexList;
-        private readonly bool _disableAllIndexes;
+        
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
-        private string _identityColumn;
-        private ColumnDirection _outputIdentity;
 
         /// <summary>
         /// 
@@ -45,8 +39,6 @@ namespace SqlBulkTools
         /// <param name="columns"></param>
         /// <param name="disableIndexList"></param>
         /// <param name="disableAllIndexes"></param>
-        /// <param name="sourceAlias"></param>
-        /// <param name="targetAlias"></param>
         /// <param name="customColumnMappings"></param>
         /// <param name="bulkCopyTimeout"></param>
         /// <param name="bulkCopyEnableStreaming"></param>
@@ -54,17 +46,14 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public BulkInsert(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, string sourceAlias,
-            string targetAlias, Dictionary<string, string> customColumnMappings, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
+        public BulkInsert(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
+            Dictionary<string, string> customColumnMappings, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
             int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
         {
             _list = list;
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
-            _sourceAlias = sourceAlias;
-            _targetAlias = targetAlias;
-            _helper = new BulkOperationsHelper();
             _updateOnList = new List<string>();
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;
@@ -89,7 +78,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkInsert<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
-            SetIdentity(columnName);
+            base.SetIdentity(columnName);
             return this;
         }
 
@@ -104,28 +93,10 @@ namespace SqlBulkTools
         public BulkInsert<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
             _outputIdentity = outputIdentity;
-            SetIdentity(columnName);
+            base.SetIdentity(columnName);
 
             return this;
         }
-
-        private void SetIdentity(Expression<Func<T, object>> columnName)
-        {
-            var propertyName = _helper.GetPropertyName(columnName);
-
-            if (propertyName == null)
-                throw new InvalidOperationException("SetIdentityColumn column name can't be null");
-
-            if (_identityColumn == null)
-                _identityColumn = propertyName;
-
-            else
-            {
-                throw new InvalidOperationException("Can't have more than one identity column");
-            }
-        }
-
-
 
         void ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
@@ -191,7 +162,7 @@ namespace SqlBulkTools
 
                                 string comm =
                                 _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Insert) +
-                                _helper.BuildInsertIntoSet(_columns, _identityColumn, fullTableName) + "OUTPUT INSERTED.Id INTO #TmpOutput(Id)" + " " + _helper.BuildSelectSet(_columns, _sourceAlias, _identityColumn) + " FROM " + Constants.TempTableName + " AS Source; " +
+                                _helper.BuildInsertIntoSet(_columns, _identityColumn, fullTableName) + "OUTPUT INSERTED.Id INTO #TmpOutput(Id)" + " " + _helper.BuildSelectSet(_columns, Constants.SourceAlias, _identityColumn) + " FROM " + Constants.TempTableName + " AS Source; " +
                                 "DROP TABLE " + Constants.TempTableName + ";";
                                 command.CommandText = comm;
                                 command.ExecuteNonQuery();

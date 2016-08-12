@@ -46,6 +46,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractOperation.cs" />
     <Compile Include="DataTableTools.cs" />
     <Compile Include="DataTableAllColumnSelect.cs" />
     <Compile Include="AllColumnSelect.cs" />
@@ -57,10 +58,11 @@
     <Compile Include="DataTableColumnSelect.cs" />
     <Compile Include="ColumnSelect.cs" />
     <Compile Include="Constants.cs" />
-    <Compile Include="DataTable.cs" />
+    <Compile Include="DataTableColumns.cs" />
     <Compile Include="IBulkOperations.cs" />
     <Compile Include="ITransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SetupDataTable.cs" />
     <Compile Include="Setup.cs" />
     <Compile Include="BulkOperations.cs" />
     <Compile Include="IdentityException.cs" />

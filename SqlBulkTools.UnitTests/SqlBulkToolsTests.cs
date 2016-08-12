@@ -245,7 +245,7 @@ namespace SqlBulkTools.UnitTests
         public void DataTableTools_GetColumn_RetrievesColumn()
         {
             // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
             var expected1 = "ISBN";
             var expected2 = "Price";    
 
@@ -262,7 +262,7 @@ namespace SqlBulkTools.UnitTests
         public void DataTableTools_GetColumn_ThrowExceptionWhenColumnNotFound()
         {
             // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
 
             // Act and Assert
             Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
@@ -272,7 +272,7 @@ namespace SqlBulkTools.UnitTests
         public void DataTableTools_GetColumn_ThrowExceptionWhenColumnsIsNull()
         {
             // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, null);
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, null, null);
 
             // Act and Assert
             Assert.Throws<NullReferenceException>(() => dtTools.GetColumn(x => x.ISBN));
@@ -283,7 +283,7 @@ namespace SqlBulkTools.UnitTests
         public void DataTableTools_GetColumn_ThrowExceptionWhenColumnMappingNotFound()
         {
             // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), null);
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
 
             Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
         }
@@ -295,7 +295,7 @@ namespace SqlBulkTools.UnitTests
             Dictionary<string, string> CustomColumns = new Dictionary<string, string>()
             { {"PublishDate", "PublishingDate"} };
 
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(GetBookColumns(), CustomColumns);
+            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), CustomColumns);
             var expected = "PublishingDate";
 
 

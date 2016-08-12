@@ -14,30 +14,22 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class BulkInsertOrUpdate<T> : ITransaction
+    public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
     {
         private readonly IEnumerable<T> _list;
         private readonly string _tableName;
         private readonly string _schema;
         private readonly HashSet<string> _columns;
-        private readonly List<string> _matchTargetOn;
-        private readonly string _sourceAlias;
-        private readonly string _targetAlias;
-        private string _identityColumn;
-        private ColumnDirection _outputIdentity;
+        private readonly List<string> _matchTargetOn;      
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly int _bulkCopyTimeout;
         private readonly bool _bulkCopyEnableStreaming;
         private readonly int? _bulkCopyNotifyAfter;
         private readonly int? _bulkCopyBatchSize;
-        private readonly bool _disableAllIndexes;
-        private readonly BulkOperations _ext;
-        private readonly BulkOperationsHelper _helper;
         private bool _deleteWhenNotMatchedFlag;
         private readonly HashSet<string> _disableIndexList;
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
-        private readonly Dictionary<int, T> _outputIdentityDic;
 
         /// <summary>
         /// 
@@ -48,8 +40,6 @@ namespace SqlBulkTools
         /// <param name="columns"></param>
         /// <param name="disableIndexList"></param>
         /// <param name="disableAllIndexes"></param>
-        /// <param name="sourceAlias"></param>
-        /// <param name="targetAlias"></param>
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="bulkCopyTimeout"></param>
@@ -58,7 +48,7 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public BulkInsertOrUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, string sourceAlias, string targetAlias,
+        public BulkInsertOrUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
             int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
         {
@@ -66,8 +56,6 @@ namespace SqlBulkTools
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
-            _sourceAlias = sourceAlias;
-            _targetAlias = targetAlias;
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _bulkCopyTimeout = bulkCopyTimeout;
@@ -76,8 +64,6 @@ namespace SqlBulkTools
             _bulkCopyBatchSize = bulkCopyBatchSize;
             _outputIdentity = ColumnDirection.Input;
             _deleteWhenNotMatchedFlag = false;
-            _helper = new BulkOperationsHelper();
-            _outputIdentityDic = new Dictionary<int, T>();
             _disableIndexList = disableIndexList;
             _matchTargetOn = new List<string>();
             _ext = ext;
@@ -129,26 +115,12 @@ namespace SqlBulkTools
         public BulkInsertOrUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
             _outputIdentity = outputIdentity;
-            SetIdentity(columnName);
+            base.SetIdentity(columnName);
 
             return this;
         }
 
-        private void SetIdentity(Expression<Func<T, object>> columnName)
-        {
-            var propertyName = _helper.GetPropertyName(columnName);
 
-            if (propertyName == null)
-                throw new InvalidOperationException("SetIdentityColumn column name can't be null");
-
-            if (_identityColumn == null)
-                _identityColumn = propertyName;
-
-            else
-            {
-                throw new InvalidOperationException("Can't have more than one identity column");
-            }
-        }
 
         /// <summary>
         /// If a target record can't be matched to a source record, it's deleted. Notes: (1) This is false by default. (2) Use at your own risk.
@@ -218,11 +190,11 @@ namespace SqlBulkTools
                             " WITH (HOLDLOCK) AS Target " +
                             "USING " + Constants.TempTableName + " AS Source " +
                             _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
-                                _sourceAlias, _targetAlias) +
+                                Constants.SourceAlias, Constants.TargetAlias) +
                             "WHEN MATCHED THEN " +
-                            _helper.BuildUpdateSet(_columns, _sourceAlias, _targetAlias, _identityColumn) +
+                            _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                             "WHEN NOT MATCHED BY TARGET THEN " +
-                            _helper.BuildInsertSet(_columns, _sourceAlias, _identityColumn) +
+                            _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
                             (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
                             _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
                                 OperationType.InsertOrUpdate) + ";" +
@@ -346,11 +318,11 @@ namespace SqlBulkTools
                         string comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
-                                          _sourceAlias, _targetAlias) +
+                                          Constants.SourceAlias, Constants.TargetAlias) +
                                       "WHEN MATCHED THEN " +
-                                      _helper.BuildUpdateSet(_columns, _sourceAlias, _targetAlias, _identityColumn) +
+                                      _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                                       "WHEN NOT MATCHED BY TARGET THEN " +
-                                      _helper.BuildInsertSet(_columns, _sourceAlias, _identityColumn) +
+                                      _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
                                       (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE; " : "; ") +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;

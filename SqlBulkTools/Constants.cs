@@ -2,18 +2,22 @@
 {
     internal static class Constants
     {
-        public const string DefaultSchemaName = "dbo";
-        public const string InternalId = "SqlBulkTools_InternalId";
-        public const string TempTableName = "#TmpTable";
+        internal const string DefaultSchemaName = "dbo";
+        internal const string InternalId = "SqlBulkTools_InternalId";
+        internal const string TempTableName = "#TmpTable";
+        internal const string SourceAlias = "Source";
+        internal const string TargetAlias = "Target";
     }
 
     internal static class IndexOperation
     {
-        public const string Rebuild = "REBUILD";
-        public const string Disable = "DISABLE";
+        internal const string Rebuild = "REBUILD";
+        internal const string Disable = "DISABLE";
     }
 
-    #pragma warning disable 1591
+
+
+#pragma warning disable 1591
     public enum ColumnDirection
     {        
         Input, InputOutput       

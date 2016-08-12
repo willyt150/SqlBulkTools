@@ -5,7 +5,6 @@ using System.Data.Entity;
 using System.Data.SqlClient;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
@@ -17,7 +16,6 @@ namespace SqlBulkTools.IntegrationTests
     [TestFixture]
     class SqlBulkToolsIT
     {
-
         private const string LogResultsLocation = @"C:\SqlBulkTools_Log.txt";
         private const int RepeatTimes = 1;
 
@@ -844,9 +842,8 @@ namespace SqlBulkTools.IntegrationTests
             BulkOperations bulk = new BulkOperations();
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            var test = bulk.Setup<Book>()
+            var test = bulk.SetupDataTable<Book>()
                 .ForCollection(books)
-                .BuildDataTable()
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Price)
                 .AddColumn(x => x.PublishDate)
@@ -982,7 +979,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkDelete(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .BulkDelete()
@@ -1060,6 +1058,7 @@ namespace SqlBulkTools.IntegrationTests
         private async Task<long> BulkDeleteAsync(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
+
             bulk.Setup<Book>(x => x.ForCollection(col))
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)

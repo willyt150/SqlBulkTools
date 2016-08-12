@@ -10,19 +10,21 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public class DataTable<T>
+    public class DataTableColumns<T>
     {
         private readonly BulkOperationsHelper _helper;
         private HashSet<string> Columns { get; set; }
         private readonly IEnumerable<T> _list;
+        private readonly BulkOperations _ext;
 
         /// <summary>
         /// 
         /// </summary>
-        public DataTable(IEnumerable<T> list)
+        public DataTableColumns(IEnumerable<T> list, BulkOperations ext)
         {
             _helper = new BulkOperationsHelper();
-            _list = list;            
+            _list = list;
+            _ext = ext;
             Columns = new HashSet<string>();
         }
 
@@ -35,7 +37,7 @@ namespace SqlBulkTools
         {
             var propertyName = _helper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new DataTableColumnSelect<T>(_list, Columns);
+            return new DataTableColumnSelect<T>(_ext, _list, Columns);
         }
 
         /// <summary>
@@ -45,7 +47,7 @@ namespace SqlBulkTools
         public DataTableAllColumnSelect<T> AddAllColumns()
         {
             Columns = _helper.GetAllValueTypeAndStringColumns(typeof(T));
-            return new DataTableAllColumnSelect<T>(_list, Columns);
+            return new DataTableAllColumnSelect<T>(_ext, _list, Columns);
         }
 
     }

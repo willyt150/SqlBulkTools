@@ -14,6 +14,7 @@ namespace SqlBulkTools
     public class DataTableTools<T>
     {
         private readonly BulkOperationsHelper _helper;
+        private readonly BulkOperations _ext;
         private readonly HashSet<string> _columns;
         private readonly Dictionary<string, string> _customColumnMappings;
         /// <summary>
@@ -25,11 +26,13 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="ext"></param>
         /// <param name="columns"></param>
         /// <param name="customColumnMappings"></param>
-        internal DataTableTools(HashSet<string> columns, Dictionary<string, string> customColumnMappings)
+        internal DataTableTools(BulkOperations ext, HashSet<string> columns, Dictionary<string, string> customColumnMappings)
         {
             _helper = new BulkOperationsHelper();
+            _ext = ext;
             _columns = columns;
             _customColumnMappings = customColumnMappings;
             DataTable = _helper.CreateDataTable<T>(_columns, _customColumnMappings);

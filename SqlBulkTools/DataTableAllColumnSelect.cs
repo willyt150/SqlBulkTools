@@ -12,6 +12,7 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class DataTableAllColumnSelect<T>
     {
+        private readonly BulkOperations _ext;
         private readonly IEnumerable<T> _list;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
         private readonly BulkOperationsHelper _helper;
@@ -21,11 +22,13 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
+        /// <param name="ext"></param>
         /// <param name="list"></param>
         /// <param name="columns"></param>
-        public DataTableAllColumnSelect(IEnumerable<T> list, HashSet<string> columns)
+        public DataTableAllColumnSelect(BulkOperations ext, IEnumerable<T> list, HashSet<string> columns)
         {
             _helper = new BulkOperationsHelper();
+            _ext = ext;
             _list = list;
             _columns = columns;
             CustomColumnMappings = new Dictionary<string, string>();
@@ -70,9 +73,8 @@ namespace SqlBulkTools
         /// <exception cref="NotImplementedException"></exception>
         public DataTableTools<T> PrepareDataTable()
         {
-            return new DataTableTools<T>(_columns, CustomColumnMappings);
+            return new DataTableTools<T>(_ext, _columns, CustomColumnMappings);
         }
-
 
     }
 }

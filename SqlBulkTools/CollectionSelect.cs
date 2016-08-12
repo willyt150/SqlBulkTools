@@ -9,22 +9,16 @@ namespace SqlBulkTools
     public class CollectionSelect<T>
     {
         private readonly IEnumerable<T> _list;
-        private readonly string _sourceAlias;
-        private readonly string _targetAlias;
         private readonly BulkOperations _ext;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="list"></param>
-        /// <param name="sourceAlias"></param>
-        /// <param name="targetAlias"></param>
         /// <param name="ext"></param>
-        public CollectionSelect(IEnumerable<T> list, string sourceAlias, string targetAlias, BulkOperations ext)
+        public CollectionSelect(IEnumerable<T> list, BulkOperations ext)
         {
             _list = list;
-            _sourceAlias = sourceAlias;
-            _targetAlias = targetAlias;
             _ext = ext;
         }
 
@@ -35,16 +29,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public Table<T> WithTable(string tableName)
         {
-            return new Table<T>(_list, tableName, _sourceAlias, _targetAlias, _ext);
+            return new Table<T>(_list, tableName, _ext);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        public DataTable<T> BuildDataTable()
-        {
-            return new DataTable<T>(_list);
-        } 
     }
 }
