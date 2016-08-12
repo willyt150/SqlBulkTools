@@ -16,19 +16,9 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
     {
-        private readonly IEnumerable<T> _list;
-        private readonly string _tableName;
-        private readonly string _schema;
-        private readonly HashSet<string> _columns;
+        private readonly IEnumerable<T> _list;  
         private readonly List<string> _matchTargetOn;      
-        private readonly Dictionary<string, string> _customColumnMappings;
-        private readonly int _sqlTimeout;
-        private readonly int _bulkCopyTimeout;
-        private readonly bool _bulkCopyEnableStreaming;
-        private readonly int? _bulkCopyNotifyAfter;
-        private readonly int? _bulkCopyBatchSize;
         private bool _deleteWhenNotMatchedFlag;
-        private readonly HashSet<string> _disableIndexList;
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
         /// <summary>
@@ -242,7 +232,7 @@ namespace SqlBulkTools
                             // Error 8102 is identity error. 
                             if (e.Errors[i].Number == 8102)
                             {
-                                // Expensive call but neccessary to inform user of an important configuration setup. 
+                                // Expensive but neccessary to inform user of an important configuration setup. 
                                 throw new IdentityException(e.Errors[i].Message);
                             }
                         }

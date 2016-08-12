@@ -17,16 +17,7 @@ namespace SqlBulkTools
     public class BulkInsert<T> : AbstractOperation<T>, ITransaction
     {
         private readonly IEnumerable<T> _list;
-        private readonly string _tableName;
-        private readonly string _schema;
-        private readonly HashSet<string> _columns;
-        private readonly List<string> _updateOnList;
-        private readonly Dictionary<string, string> _customColumnMappings;
-        private readonly int _bulkCopyTimeout;
-        private readonly bool _bulkCopyEnableStreaming;
-        private readonly int? _bulkCopyNotifyAfter;
-        private readonly int? _bulkCopyBatchSize;
-        private readonly HashSet<string> _disableIndexList;
+        private readonly List<string> _matchTargetOn;
         
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
@@ -54,7 +45,7 @@ namespace SqlBulkTools
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
-            _updateOnList = new List<string>();
+            _matchTargetOn = new List<string>();
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;
             _customColumnMappings = customColumnMappings;
@@ -110,11 +101,11 @@ namespace SqlBulkTools
                 throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
             }
 
-            DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _updateOnList, _outputIdentity);
+            DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns);
 
             // Must be after ToDataTable is called. 
-            _helper.DoColumnMappings(_customColumnMappings, _columns, _updateOnList);
+            _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -234,11 +225,11 @@ namespace SqlBulkTools
                 throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
             }
 
-            DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _updateOnList, _outputIdentity);
+            DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns);
 
             // Must be after ToDataTable is called. 
-            _helper.DoColumnMappings(_customColumnMappings, _columns, _updateOnList);
+            _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {

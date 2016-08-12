@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -10,7 +11,7 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public abstract class AbstractOperation<T>
+    public abstract class AbstractOperation<T> : ITransaction
     {
         internal readonly BulkOperationsHelper _helper;
         protected ColumnDirection _outputIdentity;
@@ -18,6 +19,16 @@ namespace SqlBulkTools
         protected string _identityColumn;
         protected Dictionary<int, T> _outputIdentityDic;
         protected bool _disableAllIndexes;
+        protected int _sqlTimeout;
+        protected HashSet<string> _columns;
+        protected int? _bulkCopyBatchSize;
+        protected int? _bulkCopyNotifyAfter;
+        protected HashSet<string> _disableIndexList;
+        protected bool _bulkCopyEnableStreaming;
+        protected int _bulkCopyTimeout;
+        protected string _schema;
+        protected string _tableName;
+        protected Dictionary<string, string> _customColumnMappings;
 
         protected AbstractOperation()
         {
@@ -45,6 +56,24 @@ namespace SqlBulkTools
             {
                 throw new InvalidOperationException("Can't have more than one identity column");
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connectionName"></param>
+        /// <param name="credentials"></param>
+        /// <param name="connection"></param>
+        /// <exception cref="NotImplementedException"></exception>
+        public void CommitTransaction(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task CommitTransactionAsync(string connectionName = null, SqlCredential credentials = null,
+            SqlConnection connection = null)
+        {
+            throw new NotImplementedException();
         }
     }
 }

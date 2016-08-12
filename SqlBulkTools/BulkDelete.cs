@@ -16,17 +16,11 @@ namespace SqlBulkTools
     public class BulkDelete<T> : AbstractOperation<T>, ITransaction
     {
         private readonly IEnumerable<T> _list; 
-        private readonly string _tableName;
-        private readonly string _schema;
-        private readonly HashSet<string> _columns;
+                
         private readonly List<string> _matchTargetOn;
-        private readonly Dictionary<string, string> _customColumnMappings;
-        private readonly int _sqlTimeout;
-        private readonly int _bulkCopyTimeout;
-        private readonly HashSet<string> _disableIndexList;
-        private readonly bool _bulkCopyEnableStreaming;
-        private readonly int? _bulkCopyNotifyAfter;
-        private readonly int? _bulkCopyBatchSize;
+               
+        
+        
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
         /// <summary>
@@ -155,10 +149,7 @@ namespace SqlBulkTools
 
                         _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, 
                             _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
-
-                        // Updating destination table, and dropping temp table
-                        
-
+                       
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
                             command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
