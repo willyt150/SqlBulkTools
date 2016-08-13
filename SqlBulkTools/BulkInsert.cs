@@ -17,9 +17,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkInsert<T> : AbstractOperation<T>, ITransaction
     {
-        
-        private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
-
         /// <summary>
         /// 
         /// </summary>
@@ -30,31 +27,21 @@ namespace SqlBulkTools
         /// <param name="disableIndexList"></param>
         /// <param name="disableAllIndexes"></param>
         /// <param name="customColumnMappings"></param>
+        /// <param name="sqlTimeout"></param>
         /// <param name="bulkCopyTimeout"></param>
         /// <param name="bulkCopyEnableStreaming"></param>
         /// <param name="bulkCopyNotifyAfter"></param>
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public BulkInsert(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
-            Dictionary<string, string> customColumnMappings, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
-            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+        public BulkInsert(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
+            HashSet<string> disableIndexList, bool disableAllIndexes,
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) : 
+
+            base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
-            _list = list;
-            _tableName = tableName;
-            _schema = schema;
-            _columns = columns;
-            _disableIndexList = disableIndexList;
-            _disableAllIndexes = disableAllIndexes;
-            _customColumnMappings = customColumnMappings;
-            _bulkCopyTimeout = bulkCopyTimeout;
-            _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
-            _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
-            _bulkCopyBatchSize = bulkCopyBatchSize;
-            _ext = ext;
-            _sqlBulkCopyOptions = sqlBulkCopyOptions;
-            _outputIdentity = ColumnDirection.Input;
-            _identityColumn = null;
             _ext.SetBulkExt(this);
         }
 

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
@@ -590,7 +591,7 @@ namespace SqlBulkTools
         }
 
         internal string GetIndexManagementCmd(string action, string tableName, 
-            string schema, SqlConnection conn, HashSet<string> disableIndexList, bool disableAllIndexes = false)
+            string schema, IDbConnection conn, HashSet<string> disableIndexList, bool disableAllIndexes = false)
         {
             StringBuilder sb = new StringBuilder();
 

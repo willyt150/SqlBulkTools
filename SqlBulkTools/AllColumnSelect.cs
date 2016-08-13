@@ -138,7 +138,7 @@ namespace SqlBulkTools
         public BulkInsert<T> BulkInsert()
         {
             return new BulkInsert<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, 
-                CustomColumnMappings, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
+                CustomColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
                 _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
 

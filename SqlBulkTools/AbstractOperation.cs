@@ -31,6 +31,7 @@ namespace SqlBulkTools
         protected Dictionary<string, string> _customColumnMappings;
         protected IEnumerable<T> _list;
         protected List<string> _matchTargetOn;
+        protected SqlBulkCopyOptions _sqlBulkCopyOptions;
 
         /// <summary>
         /// 
@@ -41,6 +42,52 @@ namespace SqlBulkTools
             _outputIdentityDic = new Dictionary<int, T>();
             _outputIdentity = ColumnDirection.Input;
             _matchTargetOn = new List<string>();
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <param name="tableName"></param>
+        /// <param name="schema"></param>
+        /// <param name="columns"></param>
+        /// <param name="disableIndexList"></param>
+        /// <param name="disableAllIndexes"></param>
+        /// <param name="customColumnMappings"></param>
+        /// <param name="sqlTimeout"></param>
+        /// <param name="bulkCopyTimeout"></param>
+        /// <param name="bulkCopyEnableStreaming"></param>
+        /// <param name="bulkCopyNotifyAfter"></param>
+        /// <param name="bulkCopyBatchSize"></param>
+        /// <param name="sqlBulkCopyOptions"></param>
+        /// <param name="ext"></param>
+        public AbstractOperation(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
+            HashSet<string> disableIndexList, bool disableAllIndexes,
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
+            bool bulkCopyEnableStreaming,
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+        {
+            _list = list;
+            _tableName = tableName;
+            _schema = schema;
+            _columns = columns;
+            _disableIndexList = disableIndexList;
+            _disableAllIndexes = disableAllIndexes;
+            _customColumnMappings = customColumnMappings;
+            _sqlTimeout = sqlTimeout;
+            _bulkCopyTimeout = bulkCopyTimeout;
+            _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
+            _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
+            _bulkCopyBatchSize = bulkCopyBatchSize;
+            _sqlBulkCopyOptions = sqlBulkCopyOptions;
+            _ext = ext;
+
+            _identityColumn = null;
+            _helper = new BulkOperationsHelper();
+            _outputIdentityDic = new Dictionary<int, T>();
+            _outputIdentity = ColumnDirection.Input;
+            _matchTargetOn = new List<string>();
+
         } 
 
         /// <summary>

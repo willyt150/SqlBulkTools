@@ -1,5 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
+using System.Data.Common;
+using System.Data.SqlClient;
+using Moq;
 using NUnit.Framework;
 using SqlBulkTools.IntegrationTests;
 using SqlBulkTools.IntegrationTests.Model;
@@ -180,11 +184,15 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             string expected =
-                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books'; EXEC(@sql);";
+                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]'; EXEC(@sql);";
             BulkOperationsHelper helper = new BulkOperationsHelper();
+            var databaseName = "SqlBulkTools";
+
+            var sqlConnMock = new Mock<IDbConnection>();
+            sqlConnMock.Setup(x => x.Database).Returns(databaseName);
 
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", null, true);
+            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, null, true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -196,13 +204,17 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             string expected =
-                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title'; EXEC(@sql);";
+                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]' AND sys.indexes.name = 'IX_Title'; EXEC(@sql);";
             BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
+            var databaseName = "SqlBulkTools";
+
+            var sqlConnMock = new Mock<IDbConnection>();
+            sqlConnMock.Setup(x => x.Database).Returns(databaseName);
 
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", indexes);
+            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -228,14 +240,19 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             string expected =
-                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;'FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title' AND sys.indexes.name = 'IX_Price'; EXEC(@sql);";
+                @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]' AND sys.indexes.name = 'IX_Title' AND sys.indexes.name = 'IX_Price'; EXEC(@sql);";
             BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
             indexes.Add("IX_Price");
 
+            var databaseName = "SqlBulkTools";
+
+            var sqlConnMock = new Mock<IDbConnection>();
+            sqlConnMock.Setup(x => x.Database).Returns(databaseName);
+
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", indexes);
+            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
 
             // Assert
             Assert.AreEqual(expected, result);

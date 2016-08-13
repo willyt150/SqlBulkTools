@@ -16,8 +16,7 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
     {      
-        private bool _deleteWhenNotMatchedFlag;
-        private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
+        private bool _deleteWhenNotMatchedFlag;       
 
         /// <summary>
         /// 
@@ -38,25 +37,13 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         public BulkInsertOrUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
-            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            
+            base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
+            bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
-            _list = list;
-            _tableName = tableName;
-            _schema = schema;
-            _columns = columns;
-            _customColumnMappings = customColumnMappings;
-            _sqlTimeout = sqlTimeout;
-            _bulkCopyTimeout = bulkCopyTimeout;
-            _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
-            _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
-            _bulkCopyBatchSize = bulkCopyBatchSize;
-            _outputIdentity = ColumnDirection.Input;
-            _deleteWhenNotMatchedFlag = false;
-            _disableIndexList = disableIndexList;
-            _ext = ext;
-            _disableAllIndexes = disableAllIndexes;
-            _sqlBulkCopyOptions = sqlBulkCopyOptions;
             _ext.SetBulkExt(this);
+            _deleteWhenNotMatchedFlag = false;
         }
 
         /// <summary>

@@ -15,9 +15,7 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkUpdate<T> : AbstractOperation<T>, ITransaction
     {
-        private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
         
-
         /// <summary>
         /// Updates existing records in bulk. 
         /// </summary>
@@ -37,34 +35,22 @@ namespace SqlBulkTools
         /// <param name="disableIndexList"></param>
         public BulkUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter,
-            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            
+            base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
-            _list = list;
-            _tableName = tableName;
-            _schema = schema;
-            _columns = columns;
-            _customColumnMappings = customColumnMappings;
-            _sqlTimeout = sqlTimeout;
-            _disableIndexList = disableIndexList;
-            _disableAllIndexes = disableAllIndexes;
-            _bulkCopyTimeout = bulkCopyTimeout;
-            _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
-            _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
-            _bulkCopyBatchSize = bulkCopyBatchSize;
-            _identityColumn = null;
-            _ext = ext;           
-            _sqlBulkCopyOptions = sqlBulkCopyOptions;                       
             _ext.SetBulkExt(this);
         }
 
-        /// <summary>
-        /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
-        /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
-        /// for matching composite relationships. 
-        /// </summary>
-        /// <param name="columnName"></param>
-        /// <returns></returns>
-        public BulkUpdate<T> MatchTargetOn(Expression<Func<T, object>> columnName)
+    /// <summary>
+    /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
+    /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
+    /// for matching composite relationships. 
+    /// </summary>
+    /// <param name="columnName"></param>
+    /// <returns></returns>
+    public BulkUpdate<T> MatchTargetOn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
 

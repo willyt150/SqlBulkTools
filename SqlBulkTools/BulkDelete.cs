@@ -16,8 +16,6 @@ namespace SqlBulkTools
     public class BulkDelete<T> : AbstractOperation<T>, ITransaction
     {
 
-        private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
-
         /// <summary>
         /// 
         /// </summary>
@@ -37,23 +35,11 @@ namespace SqlBulkTools
         /// <param name="disableIndexList"></param>
         public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
-            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+
+            base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
-            _list = list;
-            _tableName = tableName;
-            _schema = schema;
-            _columns = columns;
-            _disableIndexList = disableIndexList;
-            _disableAllIndexes = disableAllIndexes;
-            _customColumnMappings = customColumnMappings;
-            _sqlTimeout = sqlTimeout;
-            _bulkCopyTimeout = bulkCopyTimeout;
-            _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
-            _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
-            _bulkCopyBatchSize = bulkCopyBatchSize;
-            _sqlBulkCopyOptions = sqlBulkCopyOptions;
-            _ext = ext;
-            _identityColumn = null;
             _ext.SetBulkExt(this);
         }
 
