@@ -14,16 +14,14 @@ namespace SqlBulkTools
         private readonly IEnumerable<T> _list;
         private readonly string _tableName;
         private readonly string _schema;
-        private readonly string _sourceAlias;
-        private readonly string _targetAlias;
         private readonly int _sqlTimeout;
         private readonly int _bulkCopyTimeout;
         private readonly bool _bulkCopyEnableStreaming;
         private readonly int? _bulkCopyNotifyAfter;
         private readonly int? _bulkCopyBatchSize;
         private readonly BulkOperations _ext;
-        private Dictionary<string, string> CustomColumnMappings { get; set; }
-        private readonly BulkOperationsHelpers _helper;
+        private Dictionary<string, string> CustomColumnMappings { get; }
+        private readonly BulkOperationsHelper _helper;
         private readonly HashSet<string> _columns;
         private bool _disableAllIndexes;
         private readonly HashSet<string> _disableIndexList;
@@ -37,8 +35,6 @@ namespace SqlBulkTools
         /// <param name="tableName"></param>
         /// <param name="columns"></param>
         /// <param name="schema"></param>
-        /// <param name="sourceAlias"></param>
-        /// <param name="targetAlias"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="bulkCopyTimeout"></param>
         /// <param name="bulkCopyEnableStreaming"></param>
@@ -46,19 +42,17 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public AllColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema, string sourceAlias, string targetAlias,
+        public AllColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext)
         {
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _disableAllIndexes = false;
             _disableIndexList = new HashSet<string>();
             _list = list;
             _columns = columns;
             _tableName = tableName;
             _schema = schema;
-            _sourceAlias = sourceAlias;
-            _targetAlias = targetAlias;
             _sqlTimeout = sqlTimeout;
             _bulkCopyTimeout = bulkCopyTimeout;
             _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
@@ -117,13 +111,33 @@ namespace SqlBulkTools
         }
 
         /// <summary>
+        /// Remove a column that you want to be excluded. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        /// <exception cref="InvalidOperationException"></exception>
+        public AllColumnSelect<T> RemoveColumn(Expression<Func<T, object>> columnName)
+        {
+            var propertyName = _helper.GetPropertyName(columnName);
+            if (_columns.Contains(propertyName))
+                _columns.Remove(propertyName);
+
+            else           
+                throw new InvalidOperationException("Could not remove the column with name " 
+                    + columnName +  
+                    ". This could be because it's not a value or string type and therefore not included.");
+
+            return this;
+        }
+
+        /// <summary>
         /// A bulk insert will attempt to insert all records. If you have any unique constraints on columns, these must be respected. 
         /// Notes: (1) Only the columns configured (via AddColumn) will be evaluated. (3) Use AddAllColumns to add all columns in table. 
         /// </summary>
         /// <returns></returns>
         public BulkInsert<T> BulkInsert()
         {
-            return new BulkInsert<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, _sourceAlias, _targetAlias,
+            return new BulkInsert<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, 
                 CustomColumnMappings, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
                 _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
@@ -137,7 +151,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public BulkInsertOrUpdate<T> BulkInsertOrUpdate()
         {
-            return new BulkInsertOrUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, _sourceAlias, _targetAlias,
+            return new BulkInsertOrUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, 
                 CustomColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
                 _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
@@ -149,7 +163,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public BulkUpdate<T> BulkUpdate()
         {
-            return new BulkUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, _sourceAlias, _targetAlias,
+            return new BulkUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, 
                 CustomColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
                 _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
@@ -161,7 +175,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public BulkDelete<T> BulkDelete()
         {
-            return new BulkDelete<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, _sourceAlias, _targetAlias, CustomColumnMappings,
+            return new BulkDelete<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, CustomColumnMappings,
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
     }

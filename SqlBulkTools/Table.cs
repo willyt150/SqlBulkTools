@@ -14,11 +14,9 @@ namespace SqlBulkTools
         private HashSet<string> Columns { get; set; }
         private List<string> UpdateOnList { get; set; }
         private List<string> DeleteOnList { get; set; }
-        private readonly BulkOperationsHelpers _helper;
+        private readonly BulkOperationsHelper _helper;
         private string _schema;
         private readonly string _tableName;
-        private readonly string _sourceAlias;
-        private readonly string _targetAlias;
         private readonly BulkOperations _ext;
         private readonly IEnumerable<T> _list;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
@@ -34,18 +32,14 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <param name="tableName"></param>
-        /// <param name="sourceAlias"></param>
-        /// <param name="targetAlias"></param>
         /// <param name="ext"></param>
-        public Table(IEnumerable<T> list, string tableName, string sourceAlias, string targetAlias, BulkOperations ext)
+        public Table(IEnumerable<T> list, string tableName, BulkOperations ext)
         {
             _bulkCopyBatchSize = null;
             _bulkCopyNotifyAfter = null;
             _bulkCopyEnableStreaming = false;
-            _helper = new BulkOperationsHelpers();
+            _helper = new BulkOperationsHelper();
             _tableName = tableName;
-            _sourceAlias = sourceAlias;
-            _targetAlias = targetAlias;
             _sqlTimeout = 600;
             _bulkCopyTimeout = 600;
             _ext = ext;
@@ -67,7 +61,7 @@ namespace SqlBulkTools
         {
             var propertyName = _helper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new ColumnSelect<T>(_list, _tableName, Columns, _schema, _sourceAlias, _targetAlias, 
+            return new ColumnSelect<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
 
@@ -78,7 +72,7 @@ namespace SqlBulkTools
         public AllColumnSelect<T> AddAllColumns()
         {
             Columns = _helper.GetAllValueTypeAndStringColumns(typeof(T));
-            return new AllColumnSelect<T>(_list, _tableName, Columns, _schema, _sourceAlias, _targetAlias,
+            return new AllColumnSelect<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
 

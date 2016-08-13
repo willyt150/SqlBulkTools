@@ -61,6 +61,10 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\SqlBulkTools.IntegrationTests\SqlBulkTools.IntegrationTests.csproj">
+      <Project>{93203b4c-287e-4ccd-8796-988425b9e7f3}</Project>
+      <Name>SqlBulkTools.IntegrationTests</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SqlBulkTools\SqlBulkTools.csproj">
       <Project>{5cd2ee50-a2e1-4740-aee4-87e9928f0230}</Project>
       <Name>SqlBulkTools</Name>

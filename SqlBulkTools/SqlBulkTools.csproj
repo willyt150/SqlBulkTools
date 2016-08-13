@@ -46,21 +46,28 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractOperation.cs" />
+    <Compile Include="DataTableTools.cs" />
+    <Compile Include="DataTableAllColumnSelect.cs" />
     <Compile Include="AllColumnSelect.cs" />
     <Compile Include="BulkDelete.cs" />
     <Compile Include="BulkInsert.cs" />
     <Compile Include="BulkInsertOrUpdate.cs" />
-    <Compile Include="BulkOperationsHelpers.cs" />
+    <Compile Include="BulkOperationsHelper.cs" />
     <Compile Include="BulkUpdate.cs" />
+    <Compile Include="DataTableColumnSelect.cs" />
     <Compile Include="ColumnSelect.cs" />
+    <Compile Include="Constants.cs" />
+    <Compile Include="DataTableColumns.cs" />
     <Compile Include="IBulkOperations.cs" />
     <Compile Include="ITransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SetupDataTable.cs" />
     <Compile Include="Setup.cs" />
     <Compile Include="BulkOperations.cs" />
     <Compile Include="IdentityException.cs" />
     <Compile Include="Table.cs" />
-    <Compile Include="TableSelect.cs" />
+    <Compile Include="CollectionSelect.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

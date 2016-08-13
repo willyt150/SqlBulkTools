@@ -10,9 +10,7 @@ namespace SqlBulkTools
     /// </summary>
     public class BulkOperations : IBulkOperations
     {
-        private ITransaction _transaction;
-        private const string SourceAlias = "Source";
-        private const string TargetAlias = "Target";  
+        private ITransaction _transaction; 
 
         internal void SetBulkExt(ITransaction transaction)
         {
@@ -112,10 +110,32 @@ namespace SqlBulkTools
         /// <typeparam name="T">The type of collection to be used.</typeparam>
         /// <param name="list"></param>
         /// <returns></returns>
+        [Obsolete("This method is deprecated and will be removed from a future release, please use the more user-friendly Setup<T>() instead.")]
         public CollectionSelect<T> Setup<T>(Func<Setup<T>, CollectionSelect<T>> list)
         {
-            CollectionSelect<T> tableSelect = list(new Setup<T>(SourceAlias, TargetAlias, this));
+            CollectionSelect<T> tableSelect = list(new Setup<T>(this));
             return tableSelect;
         }
+
+        /// <summary>
+        /// Each transaction requires a valid setup. Examples available at: https://github.com/gtaylor44/SqlBulkTools 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public Setup<T> Setup<T>()
+        {
+            return new Setup<T>(this);
+        }
+
+        /// <summary>
+        /// Set up a DataTable. Each transaction requires a valid setup. Examples available at: https://github.com/gtaylor44/SqlBulkTools 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public SetupDataTable<T> SetupDataTable<T>()
+        {
+            return new SetupDataTable<T>(this);
+        }
     }
+
 }

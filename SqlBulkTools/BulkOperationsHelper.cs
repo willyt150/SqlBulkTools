@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("SqlBulkTools.IntegrationTests")]
 namespace SqlBulkTools
 {
-    internal class BulkOperationsHelpers
+    internal class BulkOperationsHelper
     {
         internal struct PrecisionType
         {
@@ -23,7 +23,7 @@ namespace SqlBulkTools
             public string NumericScale { get; set; }
         }
 
-        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, bool? outputIdentity = null)
+        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
         {
             Dictionary<string, string> actualColumns = new Dictionary<string, string>();
             Dictionary<string, string> actualColumnsMaxCharLength = new Dictionary<string, string>();
@@ -66,13 +66,13 @@ namespace SqlBulkTools
 
             StringBuilder command = new StringBuilder();
 
-            command.Append("CREATE TABLE #TmpTable(");
+            command.Append("CREATE TABLE " + Constants.TempTableName + "(");
 
             List<string> paramList = new List<string>();
 
             foreach (var column in columns.ToList())
             {
-                if (column == "InternalId")
+                if (column == Constants.InternalId)
                     continue;
                 string columnType;
                 if (actualColumns.TryGetValue(column, out columnType))
@@ -89,9 +89,9 @@ namespace SqlBulkTools
 
             command.Append(paramListConcatenated);
 
-            if (outputIdentity.HasValue && outputIdentity.Value)
+            if (outputIdentity == ColumnDirection.InputOutput)
             {
-                command.Append(", [InternalId] int");
+                command.Append(", [" + Constants.InternalId + "] int");
             }
             command.Append(");");
 
@@ -176,7 +176,7 @@ namespace SqlBulkTools
             {
                 if (identityColumn != null && column != identityColumn || identityColumn == null)
                 {
-                    if (column != "InternalId") 
+                    if (column != Constants.InternalId)
                         paramsSeparated.Add("[" + targetAlias + "]" + "." + "[" + column + "]" + " = " + "[" + sourceAlias + "]" + "." + "[" + column + "]");
                 }
             }
@@ -196,20 +196,65 @@ namespace SqlBulkTools
 
             foreach (var column in columns.ToList())
             {
-                if (identityColumn != null && column != identityColumn || identityColumn == null)
+
+                if (column != Constants.InternalId && column != identityColumn)
                 {
-                    if (column != "InternalId")
-                    {
-                        insertColumns.Add("[" + column + "]");
-                        values.Add("[" + sourceAlias + "]" + "." + "[" + column + "]");
-                    }
+                    insertColumns.Add("[" + column + "]");
+                    values.Add("[" + sourceAlias + "]" + "." + "[" + column + "]");
                 }
+
             }
 
             command.Append(string.Join(", ", insertColumns));
             command.Append(") values (");
             command.Append(string.Join(", ", values));
             command.Append(")");
+
+            return command.ToString();
+        }
+
+        internal string BuildInsertIntoSet(HashSet<string> columns, string identityColumn, string tableName)
+        {
+            StringBuilder command = new StringBuilder();
+            List<string> insertColumns = new List<string>();
+
+            command.Append("INSERT INTO ");
+            command.Append(tableName);
+            command.Append(" (");
+
+            foreach (var column in columns)
+            {
+                if (column != Constants.InternalId && column != identityColumn)
+                    insertColumns.Add("[" + column + "]");
+            }
+
+            command.Append(string.Join(", ", insertColumns));
+            command.Append(") ");
+
+            return command.ToString();
+        }
+
+        internal string BuildSelectSet(HashSet<string> columns, string sourceAlias, string identityColumn)
+        {
+            StringBuilder command = new StringBuilder();
+            List<string> selectColumns = new List<string>();
+            List<string> values = new List<string>();
+
+            command.Append("SELECT ");
+
+            foreach (var column in columns.ToList())
+            {
+                if (identityColumn != null && column != identityColumn || identityColumn == null)
+                {
+                    if (column != Constants.InternalId)
+                    {
+                        selectColumns.Add("[" + sourceAlias + "].[" + column + "]");
+                        values.Add("[" + column + "]");
+                    }
+                }
+            }
+
+            command.Append(string.Join(", ", selectColumns));
 
             return command.ToString();
         }
@@ -238,8 +283,11 @@ namespace SqlBulkTools
             return memberExpr.Member.Name;
         }
 
-        internal DataTable ToDataTable<T>(IEnumerable<T> items, HashSet<string> columns, Dictionary<string, string> columnMappings, List<string> matchOnColumns = null, bool? outputIdentity = null, Dictionary<int, T> outputIdentityDic = null)
+        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings, List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
         {
+            if (columns == null)
+                return null;
+
             DataTable dataTable = new DataTable(typeof(T).Name);
 
             if (matchOnColumns != null)
@@ -247,9 +295,9 @@ namespace SqlBulkTools
                 columns = CheckForAdditionalColumns(columns, matchOnColumns);
             }
 
-            if (outputIdentity.HasValue && outputIdentity.Value)
+            if (outputIdentity.HasValue && outputIdentity.Value == ColumnDirection.InputOutput)
             {
-                columns.Add("InternalId");
+                columns.Add(Constants.InternalId);
             }
 
             //Get all the properties
@@ -257,7 +305,7 @@ namespace SqlBulkTools
 
             foreach (var column in columns.ToList())
             {
-                if (columnMappings.ContainsKey(column))
+                if (columnMappings != null && columnMappings.ContainsKey(column))
                 {
                     dataTable.Columns.Add(columnMappings[column]);
                 }
@@ -266,21 +314,29 @@ namespace SqlBulkTools
                     dataTable.Columns.Add(column);
             }
 
-            AssignTypes(props, columns, dataTable, outputIdentity);
+            AssignTypes(props, columns, dataTable);
+
+            return dataTable;
+        }
+
+        public DataTable ConvertListToDataTable<T>(DataTable dataTable, IEnumerable<T> list, HashSet<string> columns, Dictionary<int, T> outputIdentityDic = null)
+        {
+
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
             int counter = 0;
 
-            foreach (T item in items)
+            foreach (T item in list)
             {
-                
+
                 var values = new List<object>();
 
                 foreach (var column in columns.ToList())
                 {
-                    if (column == "InternalId")
+                    if (column == Constants.InternalId)
                     {
                         values.Add(counter);
-                        outputIdentityDic.Add(counter, item);
+                        outputIdentityDic?.Add(counter, item);
                     }
                     else
                         for (int i = 0; i < props.Length; i++)
@@ -295,15 +351,16 @@ namespace SqlBulkTools
 
             }
             return dataTable;
+
         }
 
-        private void AssignTypes(PropertyInfo[] props, HashSet<string> columns, DataTable dataTable, bool? outputIdentity = null)
+        private void AssignTypes(PropertyInfo[] props, HashSet<string> columns, DataTable dataTable)
         {
             int count = 0;
 
             foreach (var column in columns.ToList())
             {
-                if (column == "InternalId")
+                if (column == Constants.InternalId)
                 {
                     dataTable.Columns[count].DataType = typeof(int);
                 }
@@ -486,27 +543,41 @@ namespace SqlBulkTools
 
         }
 
-        internal string GetOutputIdentityCmd(string identityColumn, bool outputIdentity, string tmpTableName, OperationType operation)
+        internal string GetOutputIdentityCmd(string identityColumn, ColumnDirection outputIdentity, string tmpTableName, OperationType operation)
         {
 
             StringBuilder sb = new StringBuilder();
-            if (identityColumn == null || !outputIdentity)
+            if (identityColumn == null || outputIdentity != ColumnDirection.InputOutput)
             {
                 return ("; ");
             }
+            if (operation == OperationType.Insert)
+                sb.Append("OUTPUT INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + identityColumn + "); ");
 
-            sb.Append("OUTPUT Source.InternalId, INSERTED." + identityColumn + " INTO " + tmpTableName + "(InternalId, " + identityColumn + "); ");
+            else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update)
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
+            else if (operation == OperationType.Delete)
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", DELETED." + identityColumn + " INTO " + tmpTableName + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
             return sb.ToString();
         }
 
-        internal string GetOutputCreateTableCmd(bool outputIdentity, string tmpTablename, OperationType operation)
+        internal string GetOutputCreateTableCmd(ColumnDirection outputIdentity, string tmpTablename, OperationType operation)
         {
+
             if (operation == OperationType.Insert)
-                return (outputIdentity ? "CREATE TABLE " + tmpTablename + "(InternalId int, Id int); " : "");
+                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + "Id int); " : "");
+
+            else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update || operation == OperationType.Delete)
+                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + Constants.InternalId + " int, Id int); " : "");
 
             return string.Empty;
+        }
+
+        internal string GetDropTmpTableCmd()
+        {
+            return "DROP TABLE " + Constants.TempOutputTableName + ";";
         }
 
         internal string GetIndexManagementCmd(string action, string table, HashSet<string> disableIndexList, bool disableAllIndexes = false)
@@ -559,7 +630,7 @@ namespace SqlBulkTools
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
-                bulkcopy.DestinationTableName = "#TmpTable";
+                bulkcopy.DestinationTableName = Constants.TempTableName;
 
                 SetSqlBulkCopySettings(bulkcopy, bulkCopyEnableStreaming,
                     bulkCopyBatchSize,
@@ -573,7 +644,7 @@ namespace SqlBulkTools
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
-                bulkcopy.DestinationTableName = "#TmpTable";
+                bulkcopy.DestinationTableName = Constants.TempTableName;
 
                 SetSqlBulkCopySettings(bulkcopy, bulkCopyEnableStreaming,
                     bulkCopyBatchSize,
@@ -584,19 +655,4 @@ namespace SqlBulkTools
         }
     }
 
-    internal static class IndexOperation
-    {
-        public const string Rebuild = "REBUILD";
-        public const string Disable = "DISABLE";
-    }
-
-    internal static class Constants
-    {
-        public const string DefaultSchemaName = "dbo";
-    }
-
-    internal enum OperationType
-    {
-        Insert, InsertOrUpdate
-    }
 }
