@@ -5,21 +5,15 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableColumnSelect<T> : IDataTableTransaction
+    public class DataTableSingularColumnSelect<T> : AbstractColumnSelect<T>, IDataTableTransaction
     {
-        private readonly DataTableOperations _ext;
-        private readonly IEnumerable<T> _list;
-        private Dictionary<string, string> CustomColumnMappings { get; set; }
-        private readonly BulkOperationsHelper _helper;
-        private readonly HashSet<string> _columns;
-        private DataTable _dt;
-
 
         /// <summary>
         /// 
@@ -27,16 +21,10 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="list"></param>
         /// <param name="columns"></param>
-        public DataTableColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
+        public DataTableSingularColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns) : base(ext, list, columns)
         {
-            _helper = new BulkOperationsHelper();
-            _ext = ext;
-            _list = list;
-            _columns = columns;
-            _dt = null;
-            CustomColumnMappings = new Dictionary<string, string>();
-        }
 
+        }
 
         /// <summary>
         /// Add each column that you want to include in the query. Only include the columns that are relevant to the 
@@ -44,7 +32,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public DataTableColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public DataTableSingularColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
             _columns.Add(propertyName);
@@ -56,7 +44,7 @@ namespace SqlBulkTools
         /// you can add a custom column mapping. 
         /// </summary>
         /// <returns></returns>
-        public DataTableColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public DataTableSingularColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = _helper.GetPropertyName(source);
             CustomColumnMappings.Add(propertyName, destination);

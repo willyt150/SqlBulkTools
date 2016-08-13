@@ -5,6 +5,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
@@ -33,11 +34,11 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public DataTableColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public DataTableSingularColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new DataTableColumnSelect<T>(_ext, _list, Columns);
+            return new DataTableSingularColumnSelect<T>(_ext, _list, Columns);
         }
 
         /// <summary>

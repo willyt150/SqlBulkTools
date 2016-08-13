@@ -4,36 +4,25 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableAllColumnSelect<T> : IDataTableTransaction
+    public class DataTableAllColumnSelect<T> : AbstractColumnSelect<T>, IDataTableTransaction
     {
-        private readonly DataTableOperations _ext;
-        private readonly IEnumerable<T> _list;
-        private Dictionary<string, string> CustomColumnMappings { get; set; }
-        private readonly BulkOperationsHelper _helper;
-        private readonly HashSet<string> _columns;
-        private readonly HashSet<string> _removedColumns; 
-        private DataTable _dt;
-
+        private readonly HashSet<string> _removedColumns;
         /// <summary>
         /// 
         /// </summary>
         /// <param name="ext"></param>
         /// <param name="list"></param>
         /// <param name="columns"></param>
-        public DataTableAllColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
+        public DataTableAllColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns) : base(ext, list, columns)
         {
-            _helper = new BulkOperationsHelper();
-            _ext = ext;
-            _list = list;
-            _columns = columns;
             _removedColumns = new HashSet<string>();
-            CustomColumnMappings = new Dictionary<string, string>();
         }
 
         /// <summary>

@@ -3,8 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
+    /// <summary>
+    /// 
+    /// </summary>
     public class DataTableOperations
     {
         private HashSet<string> _columns;
@@ -15,6 +19,9 @@ namespace SqlBulkTools
         private Type _expectedType;
 
 
+        /// <summary>
+        /// 
+        /// </summary>
         public DataTableOperations()
         {
             _helper = new BulkOperationsHelper();
@@ -54,7 +61,7 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Returns a column that has been added during SetupDataTable. CustomColumnMappings are respected. 
+        /// Returns a column that has been added during SetupDataTable. Any custom column mappings adding during setup are respected. 
         /// Notes: (1) SetupDataTable must called first. GetColumn will fail without a Setup. 
         /// (2) Type must be of the same type used during setup. (3) Column must be added using AddColumn or AddAllColumns. 
         /// Refer to documentation for examples. 

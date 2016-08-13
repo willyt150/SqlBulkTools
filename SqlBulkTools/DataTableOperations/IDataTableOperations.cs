@@ -3,6 +3,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
