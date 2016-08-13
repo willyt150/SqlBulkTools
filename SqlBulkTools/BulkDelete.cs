@@ -62,7 +62,6 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public BulkDelete<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
             base.SetIdentity(columnName);
@@ -76,7 +75,6 @@ namespace SqlBulkTools
         /// <param name="columnName"></param>
         /// <param name="outputIdentity"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public BulkDelete<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
             base.SetIdentity(columnName, outputIdentity);
@@ -175,7 +173,6 @@ namespace SqlBulkTools
         /// <param name="credentials"></param>
         /// <param name="connection"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             if (!_list.Any())

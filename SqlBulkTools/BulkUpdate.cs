@@ -54,7 +54,7 @@ namespace SqlBulkTools
             var propertyName = _helper.GetPropertyName(columnName);
 
             if (propertyName == null)
-                throw new InvalidOperationException("MatchTargetOn column name can't be null.");
+                throw new SqlBulkToolsException("MatchTargetOn column name can't be null.");
 
             _matchTargetOn.Add(propertyName);
 
@@ -67,7 +67,6 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public BulkUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
             base.SetIdentity(columnName);
@@ -81,7 +80,6 @@ namespace SqlBulkTools
         /// <param name="columnName"></param>
         /// <param name="outputIdentity"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
         public BulkUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
             base.SetIdentity(columnName, outputIdentity);

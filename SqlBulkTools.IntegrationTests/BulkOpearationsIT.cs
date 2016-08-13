@@ -722,6 +722,24 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
+        public void SqlBulkTools_BulkInsertAddInvalidDataType_ThrowsSqlBulkToolsExceptionException()
+        {
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(30);
+            BulkInsert(books);
+
+            bulk.Setup<Book>()
+                .ForCollection(books)
+                .WithTable("Books")
+                .AddColumn(x => x.ISBN)
+                .AddColumn(x => x.InvalidType)
+                .BulkInsert();
+
+            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"));
+        }
+
+        [Test]
         public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
         {
             _db.Books.RemoveRange(_db.Books.ToList());
@@ -753,7 +771,7 @@ namespace SqlBulkTools.IntegrationTests
                     FloatTest2 = 43243.34,
                     TextTest = "This is some text.",
                     GuidTest = guid,
-                    CharTest = "SomeText",
+                    CharTest = new char[] {'S', 'o', 'm', 'e' },
                     XmlTest = "<title>The best SQL Bulk tool</title>",
                     NCharTest = "SomeText",
                     ImageTest = new byte[] {3,3,32,4}
@@ -798,7 +816,7 @@ namespace SqlBulkTools.IntegrationTests
                         Assert.AreEqual(new TimeSpan(23, 32, 23), reader["TimeTest"]);
                         Assert.AreEqual(guid, reader["GuidTest"]);
                         Assert.AreEqual("This is some text.", reader["TextTest"]);
-                        Assert.AreEqual("SomeText", reader["CharTest"].ToString().Trim());
+                        Assert.AreEqual(new char[] { 'S', 'o', 'm', 'e' }, reader["CharTest"].ToString().Trim());
                         Assert.AreEqual(126, reader["TinyIntTest"]);
                         Assert.AreEqual(342324324324324324, reader["BigIntTest"]);
                         Assert.AreEqual("<title>The best SQL Bulk tool</title>", reader["XmlTest"]);

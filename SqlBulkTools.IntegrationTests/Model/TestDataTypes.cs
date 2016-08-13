@@ -26,7 +26,7 @@ namespace SqlBulkTools.IntegrationTests.Model
         public byte[] BinaryTest { get; set; }
         public short TinyIntTest { get; set; }
         public long BigIntTest { get; set; }
-        public string CharTest { get; set; }
+        public char[] CharTest { get; set; }
         public byte[] ImageTest { get; set; }
         public string NTextTest { get; set; }
         public string NCharTest { get; set; }

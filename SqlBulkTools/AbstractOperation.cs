@@ -77,26 +77,26 @@ namespace SqlBulkTools
             _outputIdentity = ColumnDirection.Input;
             _matchTargetOn = new List<string>();
 
-        } 
+        }
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="columnName"></param>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="SqlBulkToolsException"></exception>
         protected void SetIdentity(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
 
             if (propertyName == null)
-                throw new InvalidOperationException("SetIdentityColumn column name can't be null");
+                throw new SqlBulkToolsException("SetIdentityColumn column name can't be null");
 
             if (_identityColumn == null)
                 _identityColumn = propertyName;
 
             else
             {
-                throw new InvalidOperationException("Can't have more than one identity column");
+                throw new SqlBulkToolsException("Can't have more than one identity column");
             }
         }
 
@@ -114,12 +114,12 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="SqlBulkToolsException"></exception>
         protected void MatchTargetCheck()
         {
             if (_matchTargetOn.Count == 0)
             {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. " +
+                throw new SqlBulkToolsException("MatchTargetOn list is empty when it's required for this operation. " +
                                                     "This is usually the primary key of your table but can also be more than one " +
                                                     "column depending on your business rules.");
             }
@@ -128,12 +128,12 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="SqlBulkToolsException"></exception>
         protected void IndexCheck()
         {
             if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
             {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use " +
+                throw new SqlBulkToolsException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use " +
                                                     "the \'AddTmpDisableNonClusteredIndex\' method.");
             }
         }

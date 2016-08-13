@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -345,8 +346,11 @@ namespace SqlBulkTools
                     else
                         for (int i = 0; i < props.Length; i++)
                         {
-                            if (props[i].Name == column && item != null)
+                            if (props[i].Name == column && item != null 
+                                && CheckForValidDataType(props[i].PropertyType, throwIfInvalid: true))
                                 values.Add(props[i].GetValue(item, null));
+                            
+                                
                         }
 
                 }
@@ -356,6 +360,24 @@ namespace SqlBulkTools
             }
             return dataTable;
 
+        }
+
+        private bool CheckForValidDataType(Type type, bool throwIfInvalid = false)
+        {
+            if (type.IsValueType ||
+                type == typeof (string) ||
+                type == typeof (byte[]) ||
+                type == typeof (char[]) ||
+                type == typeof (SqlXml)
+                )
+                return true;
+
+            if (throwIfInvalid)
+                throw new SqlBulkToolsException("Only value, string, char[], byte[] " +
+                                                    "and SqlXml types can be used with SqlBulkTools. " +
+                                                    "Refer to https://msdn.microsoft.com/en-us/library/cc716729(v=vs.110).aspx for more details.");
+
+            return false;
         }
 
         private void AssignTypes(PropertyInfo[] props, HashSet<string> columns, DataTable dataTable)
@@ -398,7 +420,7 @@ namespace SqlBulkTools
                 return conn;
             }
 
-            throw new InvalidOperationException("Could not create SQL Connection");
+            throw new SqlBulkToolsException("Could not create SQL connection. Please check your arguments into CommitTransaction");
         }
 
         internal string GetFullQualifyingTableName(string databaseName, string schemaName, string tableName)
@@ -534,11 +556,7 @@ namespace SqlBulkTools
 
             for (int i = 0; i < props.Length; i++)
             {
-                if (props[i].PropertyType.IsValueType || 
-                    props[i].PropertyType == typeof(string) || 
-                    props[i].PropertyType == typeof(byte) ||
-                     props[i].PropertyType == typeof(byte[])
-                    )
+                if (CheckForValidDataType(props[i].PropertyType))
                 {
                     columns.Add(props[i].Name);
                 }
@@ -631,11 +649,11 @@ namespace SqlBulkTools
             var dtCols = conn.GetSchema("Columns", restrictions);
 
             if (dtCols.Rows.Count == 0 && schema != null)
-                throw new InvalidOperationException("Table name '" + tableName 
+                throw new SqlBulkToolsException("Table name '" + tableName 
                 + "\' with schema name \'" + schema + "\' not found. Check your setup and try again.");
 
             if (dtCols.Rows.Count == 0)
-                throw new InvalidOperationException("Table name \'" + tableName 
+                throw new SqlBulkToolsException("Table name \'" + tableName 
                 + "\' not found. Check your setup and try again.");
             return dtCols;
         }
@@ -790,3 +808,4 @@ namespace SqlBulkTools
     }
 
 }
+ 

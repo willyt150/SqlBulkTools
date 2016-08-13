@@ -39,17 +39,17 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void DataTableTools_GetColumn_ThrowInvalidOperationExceptionWhenNoSetup()
+        public void DataTableTools_GetColumn_ThrowSqlBulkToolsExceptionWhenNoSetup()
         {
             // Arrange
             DataTableOperations dtOps = new DataTableOperations();
 
             // Act and Assert
-            Assert.Throws<InvalidOperationException>(() => dtOps.GetColumn<Book>(x => x.Description));
+            Assert.Throws<SqlBulkToolsException>(() => dtOps.GetColumn<Book>(x => x.Description));
         }
 
         [Test]
-        public void DataTableTools_GetColumn_ThrowInvalidOperationExceptionWhenTypeMismatch()
+        public void DataTableTools_GetColumn_ThrowSqlBulkToolsExceptionWhenTypeMismatch()
         {
             // Arrange
             DataTableOperations dtOps = new DataTableOperations();
@@ -59,11 +59,11 @@ namespace SqlBulkTools.UnitTests
                 .PrepareDataTable();
 
             // Act and Assert
-            Assert.Throws<InvalidOperationException>(() => dtOps.GetColumn<BookDto>(x => x.Id));
+            Assert.Throws<SqlBulkToolsException>(() => dtOps.GetColumn<BookDto>(x => x.Id));
         }
 
         [Test]
-        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnMappingNotFound()
+        public void DataTableTools_GetColumn_ThrowSqlBulkToolsExceptionWhenColumnMappingNotFound()
         {
             // Arrange
             DataTableOperations dtOps = new DataTableOperations();
@@ -75,7 +75,7 @@ namespace SqlBulkTools.UnitTests
                 .PrepareDataTable();
 
             // Act and Assert
-            Assert.Throws<InvalidOperationException>(() => dtOps.GetColumn<Book>(x => x.Description));
+            Assert.Throws<SqlBulkToolsException>(() => dtOps.GetColumn<Book>(x => x.Description));
         }
 
         [Test]
@@ -111,7 +111,7 @@ namespace SqlBulkTools.UnitTests
                 .PrepareDataTable();
 
             // Act and Assert
-            Assert.Throws<InvalidOperationException>(() => dtOps.GetColumn<Book>(x => x.Description));
+            Assert.Throws<SqlBulkToolsException>(() => dtOps.GetColumn<Book>(x => x.Description));
         }
 
         [Test]

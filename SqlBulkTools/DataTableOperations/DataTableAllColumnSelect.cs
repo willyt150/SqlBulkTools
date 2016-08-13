@@ -42,7 +42,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        /// <exception cref="InvalidOperationException"></exception>
+        /// <exception cref="SqlBulkToolsException"></exception>
         public DataTableAllColumnSelect<T> RemoveColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
@@ -54,7 +54,7 @@ namespace SqlBulkTools
                 
 
             else           
-                throw new InvalidOperationException("Could not remove the column with name " 
+                throw new SqlBulkToolsException("Could not remove the column with name " 
                     + columnName +  
                     ". This could be because it's not a value or string type and therefore not included.");
 

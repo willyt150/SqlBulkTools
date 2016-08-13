@@ -91,14 +91,14 @@ namespace SqlBulkTools
 
 
 
-            throw new InvalidOperationException("The property \'" + propertyName + "\' was not added during setup. Use AddColumn or AddColumns to add it and/or refer to documentation.");
+            throw new SqlBulkToolsException("The property \'" + propertyName + "\' was not added during setup. Use AddColumn or AddColumns to add it and/or refer to documentation.");
         }
 
         private void CheckSetup()
         {
             if (_dataTableTransaction == null)
             {
-                throw new InvalidOperationException("SetupDataTable has not been completed. Use the SetupDataTable method and prepare a DataTable first and/or refer to documentation.");
+                throw new SqlBulkToolsException("SetupDataTable has not been completed. Use the SetupDataTable method and prepare a DataTable first and/or refer to documentation.");
             }
         }
 
@@ -106,14 +106,14 @@ namespace SqlBulkTools
         {
             if (_expectedType != null && _expectedType != type)
             {
-                throw new InvalidOperationException("GetColumn can only retrieve columns of type \'" + _expectedType.Name + "\'");
+                throw new SqlBulkToolsException("GetColumn can only retrieve columns of type \'" + _expectedType.Name + "\'");
             }
         }
 
         private void CheckRemovedColumns(string propertyName)
         {
             if (_removedColumns != null && _removedColumns.Contains(propertyName))
-                throw new InvalidOperationException("The property \'" + propertyName + "\' has already been explicitly removed.");
+                throw new SqlBulkToolsException("The property \'" + propertyName + "\' has already been explicitly removed.");
         }
 
 
