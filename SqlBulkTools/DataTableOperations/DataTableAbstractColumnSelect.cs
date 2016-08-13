@@ -12,7 +12,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public abstract class AbstractColumnSelect<T>
+    public abstract class DataTableAbstractColumnSelect<T>
     {
         #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // ReSharper disable InconsistentNaming
@@ -27,7 +27,7 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        protected AbstractColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
+        protected DataTableAbstractColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
         {
             _helper = new BulkOperationsHelper();
             

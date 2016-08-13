@@ -12,7 +12,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableSingularColumnSelect<T> : AbstractColumnSelect<T>, IDataTableTransaction
+    public class DataTableSingularColumnSelect<T> : DataTableAbstractColumnSelect<T>, IDataTableTransaction
     {
 
         /// <summary>

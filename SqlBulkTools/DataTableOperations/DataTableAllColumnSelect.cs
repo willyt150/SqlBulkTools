@@ -11,7 +11,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableAllColumnSelect<T> : AbstractColumnSelect<T>, IDataTableTransaction
+    public class DataTableAllColumnSelect<T> : DataTableAbstractColumnSelect<T>, IDataTableTransaction
     {
         private readonly HashSet<string> _removedColumns;
         /// <summary>

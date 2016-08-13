@@ -46,8 +46,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbstractColumnSelect.cs" />
     <Compile Include="AbstractOperation.cs" />
-    <Compile Include="DataTableOperations\AbstractColumnSelect.cs" />
+    <Compile Include="DataTableOperations\DataTableAbstractColumnSelect.cs" />
     <Compile Include="DataTableOperations\DataTableOperations.cs" />
     <Compile Include="DataTableOperations\DataTableAllColumnSelect.cs" />
     <Compile Include="AllColumnSelect.cs" />
