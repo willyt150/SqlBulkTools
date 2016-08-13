@@ -709,6 +709,59 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
+        public async Task SqlBulkTools_BulkInsertOrUpdateAsync_TestIdentityOutput()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(30);
+
+            bulk.Setup<Book>(x => x.ForCollection(books))
+                .WithTable("Books")
+                .AddAllColumns()
+                .BulkInsertOrUpdate()
+                .MatchTargetOn(x => x.ISBN)
+                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+            await bulk.CommitTransactionAsync("SqlBulkToolsTest");
+
+            var test = _db.Books.ToList().ElementAt(10); // Random book within the 30 elements
+            var expected = books.Single(x => x.ISBN == test.ISBN);
+
+            Assert.AreEqual(expected.Id, test.Id);
+
+        }
+
+        [Test]
+        public async Task SqlBulkTools_BulkInsertOrUpdateAsyncWithSelectedColumns_TestIdentityOutput()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(30);
+
+            bulk.Setup<Book>(x => x.ForCollection(books))
+                .WithTable("Books")
+                .AddColumn(x => x.ISBN)
+                .AddColumn(x => x.Description)
+                .AddColumn(x => x.Title)
+                .AddColumn(x => x.Price)
+                .BulkInsertOrUpdate()
+                .MatchTargetOn(x => x.ISBN)
+                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+            await bulk.CommitTransactionAsync("SqlBulkToolsTest");
+
+            var test = _db.Books.ToList().ElementAt(10); // Random book within the 30 elements
+            var expected = books.Single(x => x.ISBN == test.ISBN);
+
+            Assert.AreEqual(expected.Id, test.Id);
+
+        }
+
+        [Test]
         public void SqlBulkTools_BulkInsert_TestIdentityOutput()
         {
             _db.Books.RemoveRange(_db.Books.ToList());
@@ -935,7 +988,34 @@ namespace SqlBulkTools.IntegrationTests
             var expected = books.Single(x => x.ISBN == test.ISBN);
 
             Assert.AreEqual(expected.Id, test.Id);
+        }
 
+        [Test]
+        public async Task SqlBulkTools_BulkUpdateAsyncWithSelectedColumns_TestIdentityOutput()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(30);
+            await BulkInsertAsync(books);
+
+            bulk.Setup<Book>(x => x.ForCollection(books))
+                .WithTable("Books")
+                .AddColumn(x => x.ISBN)
+                .AddColumn(x => x.Description)
+                .AddColumn(x => x.Title)
+                .AddColumn(x => x.Price)
+                .BulkUpdate()
+                .MatchTargetOn(x => x.ISBN)
+                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+            await bulk.CommitTransactionAsync("SqlBulkToolsTest");
+
+            var test = _db.Books.ToList().ElementAt(10); // Random book within the 30 elements
+            var expected = books.Single(x => x.ISBN == test.ISBN);
+
+            Assert.AreEqual(expected.Id, test.Id);
         }
 
         [Test]

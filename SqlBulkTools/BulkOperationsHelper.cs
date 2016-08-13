@@ -498,6 +498,11 @@ namespace SqlBulkTools
             return string.Empty;
         }
 
+        internal string GetDropTmpTableCmd()
+        {
+            return "DROP TABLE " + Constants.TempOutputTableName + ";";
+        }
+
         internal string GetIndexManagementCmd(string action, string table, HashSet<string> disableIndexList, bool disableAllIndexes = false)
         {
             //AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title'

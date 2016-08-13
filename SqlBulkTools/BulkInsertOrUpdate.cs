@@ -203,7 +203,7 @@ namespace SqlBulkTools
                                 }
                             }
 
-                            command.CommandText = "DROP TABLE " + "#TmpOutput" + ";";
+                            command.CommandText = _helper.GetDropTmpTableCmd();
                             command.ExecuteNonQuery();
 
                         }
@@ -284,7 +284,8 @@ namespace SqlBulkTools
                         }
 
                         // Updating destination table, and dropping temp table                       
-                        string comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.InsertOrUpdate) + 
+                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                           Constants.SourceAlias, Constants.TargetAlias) +
@@ -292,8 +293,10 @@ namespace SqlBulkTools
                                       _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                                       "WHEN NOT MATCHED BY TARGET THEN " +
                                       _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
-                                      (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE; " : "; ") +
-                                      "DROP TABLE " + Constants.TempTableName + ";";
+                                       (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
+                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
+                                       OperationType.InsertOrUpdate) + ";" +
+                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
                         await command.ExecuteNonQueryAsync();
 
@@ -301,6 +304,29 @@ namespace SqlBulkTools
                         {
                             command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
                             await command.ExecuteNonQueryAsync();
+                        }
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
+
+                            using (SqlDataReader reader = command.ExecuteReader())
+                            {
+                                while (reader.Read())
+                                {
+                                    T item;
+
+                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
+                                    {
+                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
+                                    }
+
+                                }
+                            }
+
+                            command.CommandText = _helper.GetDropTmpTableCmd();
+                            command.ExecuteNonQuery();
+
                         }
 
                         transaction.Commit();

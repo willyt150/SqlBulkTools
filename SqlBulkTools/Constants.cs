@@ -5,8 +5,10 @@
         internal const string DefaultSchemaName = "dbo";
         internal const string InternalId = "SqlBulkTools_InternalId";
         internal const string TempTableName = "#TmpTable";
+        internal const string TempOutputTableName = "#TmpOutput";
         internal const string SourceAlias = "Source";
         internal const string TargetAlias = "Target";
+        
     }
 
     internal static class IndexOperation

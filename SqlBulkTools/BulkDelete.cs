@@ -177,7 +177,7 @@ namespace SqlBulkTools
                                 }
                             }
 
-                            command.CommandText = "DROP TABLE " + "#TmpOutput" + ";";
+                            command.CommandText = _helper.GetDropTmpTableCmd();
                             command.ExecuteNonQuery();
                         }
 
@@ -284,7 +284,7 @@ namespace SqlBulkTools
                                 }
                             }
 
-                            command.CommandText = "DROP TABLE " + "#TmpOutput" + ";";
+                            command.CommandText = _helper.GetDropTmpTableCmd();
                             await command.ExecuteNonQueryAsync();
                         }
 

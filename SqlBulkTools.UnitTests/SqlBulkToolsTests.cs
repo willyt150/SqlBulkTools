@@ -307,6 +307,22 @@ namespace SqlBulkTools.UnitTests
 
         }
 
+        [Test]
+        public void BulkOperationsHelper_GetDropTmpTableCmd_ReturnsCorrectCmd()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var expected = "DROP TABLE #TmpOutput;";
+
+            // Act
+            var result = helper.GetDropTmpTableCmd();
+
+            // Assert
+            Assert.AreEqual(expected, result);
+
+
+        }
+
         private HashSet<string> GetTestColumns()
         {
             HashSet<string> parameters = new HashSet<string>();

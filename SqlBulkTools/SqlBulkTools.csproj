@@ -53,7 +53,7 @@
     <Compile Include="BulkDelete.cs" />
     <Compile Include="BulkInsert.cs" />
     <Compile Include="BulkInsertOrUpdate.cs" />
-    <Compile Include="BulkOperationsHelpers.cs" />
+    <Compile Include="BulkOperationsHelper.cs" />
     <Compile Include="BulkUpdate.cs" />
     <Compile Include="DataTableColumnSelect.cs" />
     <Compile Include="ColumnSelect.cs" />
