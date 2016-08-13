@@ -16,8 +16,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkInsert<T> : AbstractOperation<T>, ITransaction
     {
-        private readonly IEnumerable<T> _list;
-        private readonly List<string> _matchTargetOn;
         
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
@@ -45,7 +43,6 @@ namespace SqlBulkTools
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
-            _matchTargetOn = new List<string>();
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;
             _customColumnMappings = customColumnMappings;
@@ -83,9 +80,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkInsert<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
-            _outputIdentity = outputIdentity;
-            base.SetIdentity(columnName);
-
+            base.SetIdentity(columnName, outputIdentity);
             return this;
         }
 
@@ -96,10 +91,7 @@ namespace SqlBulkTools
                 return;
             }
 
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
+            base.IndexCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns);
@@ -235,6 +227,9 @@ namespace SqlBulkTools
             {
 
                 conn.Open();
+                DataTable dtCols = null;
+                if (_outputIdentity == ColumnDirection.InputOutput)
+                    dtCols = _helper.GetDatabaseSchema(conn, _schema, _tableName);
 
                 using (SqlTransaction transaction = conn.BeginTransaction())
                 {
@@ -260,7 +255,46 @@ namespace SqlBulkTools
                                 await command.ExecuteNonQueryAsync();
                             }
 
-                            await bulkcopy.WriteToServerAsync(dt);
+                            // If InputOutput identity is selected, must use staging table.
+                            if (_outputIdentity == ColumnDirection.InputOutput && dtCols != null)
+                            {
+                                command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
+                                await command.ExecuteNonQueryAsync();
+
+                                _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
+                                    _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+
+                                string fullTableName = _helper.GetFullQualifyingTableName(conn.Database, _schema,
+                                    _tableName);
+
+                                string comm =
+                                _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Insert) +
+                                _helper.BuildInsertIntoSet(_columns, _identityColumn, fullTableName) + "OUTPUT INSERTED.Id INTO #TmpOutput(Id)" + " " + _helper.BuildSelectSet(_columns, Constants.SourceAlias, _identityColumn) + " FROM " + Constants.TempTableName + " AS Source; " +
+                                "DROP TABLE " + Constants.TempTableName + ";";
+                                command.CommandText = comm;
+                                await command.ExecuteNonQueryAsync();
+
+                                command.CommandText = "SELECT " + _identityColumn + " FROM #TmpOutput;";
+
+                                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                                {
+                                    var items = _list.ToList();
+                                    int counter = 0;
+
+                                    while (reader.Read())
+                                    {
+                                        items[counter].GetType().GetProperty(_identityColumn).SetValue(items[counter], reader[0], null);
+                                        counter++;
+                                    }
+                                }
+
+                                command.CommandText = "DROP TABLE " + "#TmpOutput" + ";";
+                                await command.ExecuteNonQueryAsync();
+
+                            }
+
+                            else
+                                await bulkcopy.WriteToServerAsync(dt);
 
                             if (_disableAllIndexes || (_disableIndexList != null && _disableIndexList.Any()))
                             {

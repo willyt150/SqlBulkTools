@@ -14,12 +14,7 @@ namespace SqlBulkTools
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class BulkDelete<T> : AbstractOperation<T>, ITransaction
-    {
-        private readonly IEnumerable<T> _list; 
-                
-        private readonly List<string> _matchTargetOn;
-               
-        
+    {               
         
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
@@ -47,8 +42,7 @@ namespace SqlBulkTools
             _list = list;
             _tableName = tableName;
             _schema = schema;
-            _columns = columns;
-            _matchTargetOn = new List<string>();
+            _columns = columns;            
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;
             _customColumnMappings = customColumnMappings;
@@ -100,9 +94,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkDelete<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
-            _outputIdentity = outputIdentity;
-            base.SetIdentity(columnName);
-
+            base.SetIdentity(columnName, outputIdentity);
             return this;
         }
 
@@ -113,15 +105,8 @@ namespace SqlBulkTools
                 return;
             }
 
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
-
-            if (_matchTargetOn.Count == 0)
-            {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. This is usually the primary key of your table but can also be more than one column depending on your business rules.");
-            }
+            base.IndexCheck();
+            base.MatchTargetCheck();                       
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
@@ -226,17 +211,8 @@ namespace SqlBulkTools
             {
                 return;
             }
-
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
-
-            if (_matchTargetOn.Count == 0)
-            {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. " +
-                                                    "This is usually the primary key of your table but can also be more than one column depending on your business rules.");
-            }
+            base.IndexCheck();
+            base.MatchTargetCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
@@ -272,11 +248,14 @@ namespace SqlBulkTools
                         }
 
                         // Updating destination table, and dropping temp table
-                        string comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Delete) + 
+                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                       Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN DELETE; " +
+                                      "WHEN MATCHED THEN DELETE " +
+                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
+                                      OperationType.Delete) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
                         await command.ExecuteNonQueryAsync();
@@ -284,6 +263,28 @@ namespace SqlBulkTools
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
                             command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
+                            await command.ExecuteNonQueryAsync();
+                        }
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
+
+                            using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                            {
+                                while (reader.Read())
+                                {
+                                    T item;
+
+                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
+                                    {
+                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
+                                    }
+
+                                }
+                            }
+
+                            command.CommandText = "DROP TABLE " + "#TmpOutput" + ";";
                             await command.ExecuteNonQueryAsync();
                         }
 

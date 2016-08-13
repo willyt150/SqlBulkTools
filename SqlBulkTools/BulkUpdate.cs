@@ -15,8 +15,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkUpdate<T> : AbstractOperation<T>, ITransaction
     {
-        private readonly IEnumerable<T> _list;
-        private readonly List<string> _matchTargetOn;      
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
         
 
@@ -53,7 +51,6 @@ namespace SqlBulkTools
             _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
             _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
             _bulkCopyBatchSize = bulkCopyBatchSize;
-            _matchTargetOn = new List<string>();
             _identityColumn = null;
             _ext = ext;           
             _sqlBulkCopyOptions = sqlBulkCopyOptions;                       
@@ -88,7 +85,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
-            SetIdentity(columnName);
+            base.SetIdentity(columnName);
             return this;
         }
 
@@ -102,9 +99,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
-            _outputIdentity = outputIdentity;
-            base.SetIdentity(columnName);
-
+            base.SetIdentity(columnName, outputIdentity);
             return this;
         }
 

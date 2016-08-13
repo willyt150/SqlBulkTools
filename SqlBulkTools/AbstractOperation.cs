@@ -11,7 +11,7 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public abstract class AbstractOperation<T> : ITransaction
+    public abstract class AbstractOperation<T>
     {
         internal readonly BulkOperationsHelper _helper;
         protected ColumnDirection _outputIdentity;
@@ -29,12 +29,18 @@ namespace SqlBulkTools
         protected string _schema;
         protected string _tableName;
         protected Dictionary<string, string> _customColumnMappings;
+        protected IEnumerable<T> _list;
+        protected List<string> _matchTargetOn;
 
+        /// <summary>
+        /// 
+        /// </summary>
         protected AbstractOperation()
         {
             _helper = new BulkOperationsHelper();
             _outputIdentityDic = new Dictionary<int, T>();
             _outputIdentity = ColumnDirection.Input;
+            _matchTargetOn = new List<string>();
         } 
 
         /// <summary>
@@ -61,19 +67,36 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="connectionName"></param>
-        /// <param name="credentials"></param>
-        /// <param name="connection"></param>
-        /// <exception cref="NotImplementedException"></exception>
-        public void CommitTransaction(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null)
+        /// <param name="columnName"></param>
+        /// <param name="outputIdentity"></param>
+        protected void SetIdentity(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
-            throw new NotImplementedException();
+            _outputIdentity = outputIdentity;
+            SetIdentity(columnName);
         }
 
-        public Task CommitTransactionAsync(string connectionName = null, SqlCredential credentials = null,
-            SqlConnection connection = null)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
+        protected void MatchTargetCheck()
         {
-            throw new NotImplementedException();
+            if (_matchTargetOn.Count == 0)
+            {
+                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. This is usually the primary key of your table but can also be more than one column depending on your business rules.");
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <exception cref="InvalidOperationException"></exception>
+        protected void IndexCheck()
+        {
+            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
+            {
+                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
+            }
         }
     }
 }

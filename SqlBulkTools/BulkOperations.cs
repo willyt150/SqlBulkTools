@@ -137,4 +137,5 @@ namespace SqlBulkTools
             return new SetupDataTable<T>(this);
         }
     }
+
 }

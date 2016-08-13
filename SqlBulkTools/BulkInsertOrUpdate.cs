@@ -15,9 +15,7 @@ namespace SqlBulkTools
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
-    {
-        private readonly IEnumerable<T> _list;  
-        private readonly List<string> _matchTargetOn;      
+    {      
         private bool _deleteWhenNotMatchedFlag;
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
@@ -55,7 +53,6 @@ namespace SqlBulkTools
             _outputIdentity = ColumnDirection.Input;
             _deleteWhenNotMatchedFlag = false;
             _disableIndexList = disableIndexList;
-            _matchTargetOn = new List<string>();
             _ext = ext;
             _disableAllIndexes = disableAllIndexes;
             _sqlBulkCopyOptions = sqlBulkCopyOptions;
@@ -104,9 +101,7 @@ namespace SqlBulkTools
         /// <exception cref="InvalidOperationException"></exception>
         public BulkInsertOrUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
-            _outputIdentity = outputIdentity;
-            base.SetIdentity(columnName);
-
+            base.SetIdentity(columnName, outputIdentity);
             return this;
         }
 
@@ -130,16 +125,8 @@ namespace SqlBulkTools
                 return;
             }
 
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
-
-            if (_matchTargetOn.Count == 0)
-            {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. " +
-                                                    "This is usually the primary key of your table but can also be more than one column depending on your business rules.");
-            }
+            base.IndexCheck();
+            base.MatchTargetCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
@@ -261,16 +248,8 @@ namespace SqlBulkTools
                 return;
             }
 
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
-
-            if (_matchTargetOn.Count == 0)
-            {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. " +
-                                                    "This is usually the primary key of your table but can also be more than one column depending on your business rules.");
-            }
+            base.IndexCheck();
+            base.MatchTargetCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
