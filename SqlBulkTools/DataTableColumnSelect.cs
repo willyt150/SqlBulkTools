@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -10,13 +11,14 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableColumnSelect<T>
+    public class DataTableColumnSelect<T> : IDataTableTransaction
     {
-        private readonly BulkOperations _ext;
+        private readonly DataTableOperations _ext;
         private readonly IEnumerable<T> _list;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
         private readonly BulkOperationsHelper _helper;
         private readonly HashSet<string> _columns;
+        private DataTable _dt;
 
 
         /// <summary>
@@ -25,12 +27,13 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="list"></param>
         /// <param name="columns"></param>
-        public DataTableColumnSelect(BulkOperations ext, IEnumerable<T> list, HashSet<string> columns)
+        public DataTableColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
         {
             _helper = new BulkOperationsHelper();
             _ext = ext;
             _list = list;
             _columns = columns;
+            _dt = null;
             CustomColumnMappings = new Dictionary<string, string>();
         }
 
@@ -64,9 +67,16 @@ namespace SqlBulkTools
         /// Returns a data table to be used in a stored procedure. 
         /// </summary>
         /// <returns></returns>
-        public DataTableTools<T> PrepareDataTable()
+        public DataTable PrepareDataTable()
         {
-            return new DataTableTools<T>(_ext, _columns, CustomColumnMappings);
+            _dt = _helper.CreateDataTable<T>(_columns, CustomColumnMappings);
+            _ext.SetBulkExt(this, _columns, CustomColumnMappings, typeof(T));
+            return _dt;
+        }
+
+        DataTable IDataTableTransaction.BuildDataTable()
+        {
+            return _helper.ConvertListToDataTable(_dt, _list, _columns);
         }
 
     }

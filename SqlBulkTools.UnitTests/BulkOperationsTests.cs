@@ -1,14 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using NUnit.Framework;
+using SqlBulkTools.IntegrationTests;
 using SqlBulkTools.IntegrationTests.Model;
+using SqlBulkTools.IntegrationTests.TestEnvironment;
 using SqlBulkTools.UnitTests.Model;
 
 namespace SqlBulkTools.UnitTests
 {
     [TestFixture]
-    class SqlBulkToolsUnitTests
+    class BulkOperationsTests
     {
 
         [Test]
@@ -241,71 +242,7 @@ namespace SqlBulkTools.UnitTests
 
         }
 
-        [Test]
-        public void DataTableTools_GetColumn_RetrievesColumn()
-        {
-            // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
-            var expected1 = "ISBN";
-            var expected2 = "Price";    
 
-            // Act
-            var result1 = dtTools.GetColumn(x => x.ISBN);
-            var result2 = dtTools.GetColumn(x => x.Price);
-
-            // Assert
-            Assert.AreEqual(expected1, result1);
-            Assert.AreEqual(expected2, result2);
-        }
-
-        [Test]
-        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnNotFound()
-        {
-            // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
-
-            // Act and Assert
-            Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
-        }
-
-        [Test]
-        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnsIsNull()
-        {
-            // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, null, null);
-
-            // Act and Assert
-            Assert.Throws<NullReferenceException>(() => dtTools.GetColumn(x => x.ISBN));
-
-        }
-
-        [Test]
-        public void DataTableTools_GetColumn_ThrowExceptionWhenColumnMappingNotFound()
-        {
-            // Arrange
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), null);
-
-            Assert.Throws<InvalidOperationException>(() => dtTools.GetColumn(x => x.Description));
-        }
-
-        [Test]
-        public void DataTableTools_GetColumn_CustomColumnMapsCorrectly()
-        {
-            // Arrange
-            Dictionary<string, string> CustomColumns = new Dictionary<string, string>()
-            { {"PublishDate", "PublishingDate"} };
-
-            DataTableTools<Book> dtTools = new DataTableTools<Book>(null, GetBookColumns(), CustomColumns);
-            var expected = "PublishingDate";
-
-
-            // Act
-            var result = dtTools.GetColumn(x => x.PublishDate);
-
-            // Assert
-            Assert.AreEqual(expected, result);
-
-        }
 
         [Test]
         public void BulkOperationsHelper_GetDropTmpTableCmd_ReturnsCorrectCmd()
@@ -319,7 +256,6 @@ namespace SqlBulkTools.UnitTests
 
             // Assert
             Assert.AreEqual(expected, result);
-
 
         }
 

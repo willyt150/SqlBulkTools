@@ -8,13 +8,13 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class SetupDataTable<T>
     {
-        private readonly BulkOperations _ext;
+        private readonly DataTableOperations _ext;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="ext"></param>
-        public SetupDataTable(BulkOperations ext)
+        public SetupDataTable(DataTableOperations ext)
         {
             _ext = ext;
         }

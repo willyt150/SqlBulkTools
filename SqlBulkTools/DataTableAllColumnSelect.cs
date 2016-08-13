@@ -10,14 +10,15 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DataTableAllColumnSelect<T>
+    public class DataTableAllColumnSelect<T> : IDataTableTransaction
     {
-        private readonly BulkOperations _ext;
+        private readonly DataTableOperations _ext;
         private readonly IEnumerable<T> _list;
         private Dictionary<string, string> CustomColumnMappings { get; set; }
         private readonly BulkOperationsHelper _helper;
         private readonly HashSet<string> _columns;
-
+        private readonly HashSet<string> _removedColumns; 
+        private DataTable _dt;
 
         /// <summary>
         /// 
@@ -25,12 +26,13 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="list"></param>
         /// <param name="columns"></param>
-        public DataTableAllColumnSelect(BulkOperations ext, IEnumerable<T> list, HashSet<string> columns)
+        public DataTableAllColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
         {
             _helper = new BulkOperationsHelper();
             _ext = ext;
             _list = list;
             _columns = columns;
+            _removedColumns = new HashSet<string>();
             CustomColumnMappings = new Dictionary<string, string>();
         }
 
@@ -56,7 +58,11 @@ namespace SqlBulkTools
         {
             var propertyName = _helper.GetPropertyName(columnName);
             if (_columns.Contains(propertyName))
+            {
+                _removedColumns.Add(propertyName);
                 _columns.Remove(propertyName);
+            }
+                
 
             else           
                 throw new InvalidOperationException("Could not remove the column with name " 
@@ -71,9 +77,16 @@ namespace SqlBulkTools
         /// </summary>
         /// <returns></returns>
         /// <exception cref="NotImplementedException"></exception>
-        public DataTableTools<T> PrepareDataTable()
+        public DataTable PrepareDataTable()
         {
-            return new DataTableTools<T>(_ext, _columns, CustomColumnMappings);
+            _ext.SetBulkExt(this, _columns, CustomColumnMappings, typeof(T), _removedColumns);
+            _dt = _helper.CreateDataTable<T>(_columns, CustomColumnMappings);
+            return _dt;
+        }
+
+        DataTable IDataTableTransaction.BuildDataTable()
+        {
+            return _helper.ConvertListToDataTable(_dt, _list, _columns);
         }
 
     }

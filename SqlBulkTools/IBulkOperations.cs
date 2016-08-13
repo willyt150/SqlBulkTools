@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
@@ -41,5 +42,12 @@ namespace SqlBulkTools
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         CollectionSelect<T> Setup<T>(Func<Setup<T>, CollectionSelect<T>> list);
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        Setup<T> Setup<T>();
     }
 }

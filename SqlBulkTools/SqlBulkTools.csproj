@@ -47,7 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AbstractOperation.cs" />
-    <Compile Include="DataTableTools.cs" />
+    <Compile Include="DataTableOperations.cs" />
     <Compile Include="DataTableAllColumnSelect.cs" />
     <Compile Include="AllColumnSelect.cs" />
     <Compile Include="BulkDelete.cs" />
@@ -59,7 +59,9 @@
     <Compile Include="ColumnSelect.cs" />
     <Compile Include="Constants.cs" />
     <Compile Include="DataTableColumns.cs" />
+    <Compile Include="IDataTableOperations.cs" />
     <Compile Include="IBulkOperations.cs" />
+    <Compile Include="IDataTableTransaction.cs" />
     <Compile Include="ITransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SetupDataTable.cs" />

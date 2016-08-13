@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 
@@ -127,15 +128,7 @@ namespace SqlBulkTools
             return new Setup<T>(this);
         }
 
-        /// <summary>
-        /// Set up a DataTable. Each transaction requires a valid setup. Examples available at: https://github.com/gtaylor44/SqlBulkTools 
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public SetupDataTable<T> SetupDataTable<T>()
-        {
-            return new SetupDataTable<T>(this);
-        }
+
     }
 
 }

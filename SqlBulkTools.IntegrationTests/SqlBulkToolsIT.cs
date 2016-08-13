@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -979,24 +979,7 @@ namespace SqlBulkTools.IntegrationTests
             Assert.AreEqual(expected.Id, test.Id);
         }
 
-        [Test]
-        public void SqlBulkTools_ToDataTable_WhenThreeColumnsAdded()
-        {
-            BulkOperations bulk = new BulkOperations();
-            List<Book> books = _randomizer.GetRandomCollection(30);
 
-            var test = bulk.SetupDataTable<Book>()
-                .ForCollection(books)
-                .AddColumn(x => x.ISBN)
-                .AddColumn(x => x.Price)
-                .AddColumn(x => x.PublishDate)
-                .PrepareDataTable();
-
-            Assert.AreEqual("ISBN", test.DataTable.Columns[0].ColumnName);
-            Assert.AreEqual("Price", test.DataTable.Columns[1].ColumnName);
-            Assert.AreEqual("PublishDate", test.DataTable.Columns[2].ColumnName);
-            Assert.AreEqual(typeof(DateTime), test.DataTable.Columns[2].DataType);
-        }
 
         [Test]
         public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()

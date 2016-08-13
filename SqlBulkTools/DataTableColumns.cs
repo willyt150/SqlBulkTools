@@ -15,12 +15,12 @@ namespace SqlBulkTools
         private readonly BulkOperationsHelper _helper;
         private HashSet<string> Columns { get; set; }
         private readonly IEnumerable<T> _list;
-        private readonly BulkOperations _ext;
+        private readonly DataTableOperations _ext;
 
         /// <summary>
         /// 
         /// </summary>
-        public DataTableColumns(IEnumerable<T> list, BulkOperations ext)
+        public DataTableColumns(IEnumerable<T> list, DataTableOperations ext)
         {
             _helper = new BulkOperationsHelper();
             _list = list;
