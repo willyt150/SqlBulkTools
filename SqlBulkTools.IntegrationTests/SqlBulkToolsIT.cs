@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
@@ -877,95 +878,11 @@ namespace SqlBulkTools.IntegrationTests
             Assert.AreEqual(expected.Id, test.Id);
         }
 
-        public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
-        {
-            _db.Books.RemoveRange(_db.Books.ToList());
-            _db.SaveChanges();
-
-            var todaysDate = DateTime.Today;
-            Guid guid = Guid.NewGuid();
-
-            BulkOperations bulk = new BulkOperations();
-            List<TestDataType> dataTypeTest = new List<TestDataType>()
-            {
-                new TestDataType()
-                {
-                    BigIntTest = 342324324324324324,
-                    TinyIntTest = 126,
-                    DateTimeTest = todaysDate,
-                    DateTime2Test = new DateTime(2008, 12, 12, 10, 20, 30),
-                    DateTest = new DateTime(2007, 7, 5, 20, 30, 10),
-                    TimeTest = new TimeSpan(23, 32, 23),
-                    SmallDateTimeTest = new DateTime(2005, 7, 14),
-                    BinaryTest = new byte[] {0, 3, 3, 2, 4, 3},
-                    VarBinaryTest = new byte[] {3, 23, 33, 243},
-                    DecimalTest = 178.43M,
-                    MoneyTest = 24333.99M,
-                    SmallMoneyTest = 103.32M,
-                    RealTest = 32.53F,
-                    NumericTest = 154343.3434342M,
-                    FloatTest = 232.43F,
-                    FloatTest2 = 43243.34,
-                    TextTest = "This is some text.",
-                    GuidTest = guid,
-                    CharTest = "SomeText",
-                    XmlTest = "<title>The best SQL Bulk tool</title>",
-                    NCharTest = "SomeText",
-                    ImageTest = new byte[] {3,3,32,4}
-                }
-            };
-
-            bulk.Setup<TestDataType>(x => x.ForCollection(dataTypeTest))
-                .WithTable("TestDataTypes")
-                .AddAllColumns()
-                .BulkInsertOrUpdate()
-                .MatchTargetOn(x => x.TimeTest);
-
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            using (
-                var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["SqlBulkToolsTest"].ConnectionString)
-                )
-            using (var command = new SqlCommand(
-                @"IF (NOT EXISTS (SELECT * 
-                 FROM INFORMATION_SCHEMA.TABLES 
-                 WHERE TABLE_NAME = '[dbo].[Books]'))
-                 BEGIN 
-                 DBCC CHECKIDENT ('[dbo].[Books]', RESEED, 0); 
-                 END", conn) 
-            {
-                CommandType = CommandType.Text
-            })
-            {
-                conn.Open();
-                command.ExecuteNonQuery();
-            }           
-
-        List<Book> books = _randomizer.GetRandomCollection(30);
-            BulkDelete(_db.Books.ToList());
-            BulkInsert(books);
-
-            BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(books))
-                .WithTable("Books")
-                .WithBulkCopyBatchSize(5000)
-                .AddColumn(x => x.ISBN)
-                .BulkDelete()
-                .MatchTargetOn(x => x.ISBN)
-                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
-
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            var test = books.First();
-            var expected = 1;
-
-            Assert.AreEqual(expected, test.Id);
-        }
-
 
         [Test]
         public async Task SqlBulkTools_AsyncBulkDeleteWithSelectedColumns_TestIdentityOutput()
         {
+            await BulkDeleteAsync(_db.Books.ToList());
 
             using (
                 var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["SqlBulkToolsTest"].ConnectionString)
@@ -985,8 +902,7 @@ namespace SqlBulkTools.IntegrationTests
                 command.ExecuteNonQuery();
             }
 
-            List<Book> books = _randomizer.GetRandomCollection(30);
-            await BulkDeleteAsync(_db.Books.ToList());
+            List<Book> books = _randomizer.GetRandomCollection(30);            
             await BulkInsertAsync(books);
 
             BulkOperations bulk = new BulkOperations();
@@ -1080,6 +996,64 @@ namespace SqlBulkTools.IntegrationTests
             Assert.AreEqual("PublishDate", test.DataTable.Columns[2].ColumnName);
             Assert.AreEqual(typeof(DateTime), test.DataTable.Columns[2].DataType);
         }
+
+        [Test]
+        public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+
+            var todaysDate = DateTime.Today;
+            Guid guid = Guid.NewGuid();
+
+            BulkOperations bulk = new BulkOperations();
+            List<TestDataType> dataTypeTest = new List<TestDataType>()
+            {
+                new TestDataType()
+                {
+                    BigIntTest = 342324324324324324,
+                    TinyIntTest = 126,
+                    DateTimeTest = todaysDate,
+                    DateTime2Test = new DateTime(2008, 12, 12, 10, 20, 30),
+                    DateTest = new DateTime(2007, 7, 5, 20, 30, 10),
+                    TimeTest = new TimeSpan(23, 32, 23),
+                    SmallDateTimeTest = new DateTime(2005, 7, 14),
+                    BinaryTest = new byte[] {0, 3, 3, 2, 4, 3},
+                    VarBinaryTest = new byte[] {3, 23, 33, 243},
+                    DecimalTest = 178.43M,
+                    MoneyTest = 24333.99M,
+                    SmallMoneyTest = 103.32M,
+                    RealTest = 32.53F,
+                    NumericTest = 154343.3434342M,
+                    FloatTest = 232.43F,
+                    FloatTest2 = 43243.34,
+                    TextTest = "This is some text.",
+                    GuidTest = guid,
+                    CharTest = "SomeText",
+                    XmlTest = "<title>The best SQL Bulk tool</title>",
+                    NCharTest = "SomeText",
+                    ImageTest = new byte[] {3,3,32,4}
+                }
+            };
+
+            bulk.Setup<TestDataType>(x => x.ForCollection(dataTypeTest))
+                .WithTable("TestDataTypes")
+                .AddAllColumns()
+                .BulkInsertOrUpdate()
+                .MatchTargetOn(x => x.TimeTest);
+
+            bulk.CommitTransaction("SqlBulkToolsTest");
+
+
+            using (
+                var conn = new SqlConnection(ConfigurationManager.ConnectionStrings["SqlBulkToolsTest"].ConnectionString)
+                )
+            using (var command = new SqlCommand("SELECT TOP 1 * FROM [dbo].[TestDataTypes]", conn)
+            {
+                CommandType = CommandType.Text
+            })
+            {
+                conn.Open();
 
                 using (var reader = command.ExecuteReader())
                 {

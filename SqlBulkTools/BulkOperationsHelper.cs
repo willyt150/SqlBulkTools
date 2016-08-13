@@ -17,17 +17,13 @@ namespace SqlBulkTools
 {
     internal class BulkOperationsHelper
     {
-<<<<<<< HEAD:SqlBulkTools/BulkOperationsHelper.cs
-        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
-=======
         internal struct PrecisionType
         {
             public string NumericPrecision { get; set; }
             public string NumericScale { get; set; }
         }
 
-        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, bool? outputIdentity = null)
->>>>>>> master:SqlBulkTools/BulkOperationsHelpers.cs
+        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
         {
             Dictionary<string, string> actualColumns = new Dictionary<string, string>();
             Dictionary<string, string> actualColumnsMaxCharLength = new Dictionary<string, string>();
@@ -70,12 +66,7 @@ namespace SqlBulkTools
 
             StringBuilder command = new StringBuilder();
 
-<<<<<<< HEAD:SqlBulkTools/BulkOperationsHelper.cs
-
             command.Append("CREATE TABLE " + Constants.TempTableName + "(");
-=======
-            command.Append("CREATE TABLE #TmpTable(");
->>>>>>> master:SqlBulkTools/BulkOperationsHelpers.cs
 
             List<string> paramList = new List<string>();
 
