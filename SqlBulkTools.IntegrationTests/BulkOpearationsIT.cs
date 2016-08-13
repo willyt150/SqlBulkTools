@@ -219,7 +219,8 @@ namespace SqlBulkTools.IntegrationTests
             BulkDelete(_db.Books.ToList());
 
             _bookCollection = _randomizer.GetRandomCollection(rows);
-            bulk.Setup<Book>(x => x.ForCollection(_bookCollection))
+            bulk.Setup<Book>()
+                .ForCollection(_bookCollection)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsert()
@@ -237,7 +238,8 @@ namespace SqlBulkTools.IntegrationTests
 
             }
 
-            bulk.Setup<Book>(x => x.ForCollection(_bookCollection))
+            bulk.Setup<Book>()
+                .ForCollection(_bookCollection)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkUpdate()
@@ -255,7 +257,6 @@ namespace SqlBulkTools.IntegrationTests
         [TestCase(1000)]
         public void SqlBulkTools_BulkDelete(int rows)
         {
-            var fixture = new Fixture();
             _bookCollection = _randomizer.GetRandomCollection(rows);
             BulkDelete(_db.Books.ToList());
 
@@ -321,7 +322,8 @@ namespace SqlBulkTools.IntegrationTests
             BulkOperations bulk = new BulkOperations();
             _bookCollection = _randomizer.GetRandomCollection(20);
 
-            bulk.Setup<Book>(x => x.ForCollection(_bookCollection))
+            bulk.Setup<Book>()
+                .ForCollection(_bookCollection)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkUpdate()
@@ -346,7 +348,8 @@ namespace SqlBulkTools.IntegrationTests
             _bookCollection = _db.Books.ToList();
             _bookCollection.First().Description = testDesc;
 
-            bulk.Setup<Book>(x => x.ForCollection(_bookCollection))
+            bulk.Setup<Book>()
+                .ForCollection(_bookCollection)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkUpdate()
@@ -374,8 +377,8 @@ namespace SqlBulkTools.IntegrationTests
             }
 
             // Act            
-            bulk.Setup<SchemaTest2>(
-                x => x.ForCollection(_db.SchemaTest2.ToList()))
+            bulk.Setup<SchemaTest2>()
+                .ForCollection(_db.SchemaTest2)
                 .WithTable("SchemaTest")
                 .WithSchema("AnotherSchema")
                 .AddAllColumns()
@@ -383,7 +386,8 @@ namespace SqlBulkTools.IntegrationTests
 
             bulk.CommitTransaction("SqlBulkToolsTest");
 
-            bulk.Setup<SchemaTest2>(x => x.ForCollection(conflictingSchemaCol))
+            bulk.Setup<SchemaTest2>()
+                .ForCollection(conflictingSchemaCol)
                 .WithTable("SchemaTest")
                 .WithSchema("AnotherSchema")
                 .AddAllColumns()
@@ -411,7 +415,8 @@ namespace SqlBulkTools.IntegrationTests
 
             // Act
 
-            bulk.Setup<SchemaTest1>(x => x.ForCollection(col))
+            bulk.Setup<SchemaTest1>()
+                .ForCollection(col)
                 .WithTable("SchemaTest") // Don't specify schema. Default schema dbo is used. 
                 .AddAllColumns()
                 .BulkInsert();
@@ -420,7 +425,8 @@ namespace SqlBulkTools.IntegrationTests
 
             var allItems = _db.SchemaTest1.ToList();
 
-            bulk.Setup<SchemaTest1>(x => x.ForCollection(allItems))
+            bulk.Setup<SchemaTest1>()
+                .ForCollection(allItems)
                 .WithTable("SchemaTest")
                 .AddColumn(x => x.Id)
                 .BulkDelete()
@@ -450,7 +456,8 @@ namespace SqlBulkTools.IntegrationTests
             _bookCollection.ElementAt(elemToUpdate).Price = updatedPrice;
 
             // Act           
-            bulk.Setup<Book>(x => x.ForCollection(_bookCollection))
+            bulk.Setup<Book>()
+                .ForCollection(_bookCollection)
                 .WithTable("Books")
                 .AddColumn(x => x.Price)
                 .BulkUpdate()
@@ -482,7 +489,8 @@ namespace SqlBulkTools.IntegrationTests
             _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
             _db.SaveChanges();
 
-            bulk.Setup<CustomColumnMappingTest>(x => x.ForCollection(col))
+            bulk.Setup<CustomColumnMappingTest>()
+                .ForCollection(col)
                 .WithTable("CustomColumnMappingTests")
                 .AddAllColumns()
                 .CustomColumnMapping(x => x.ColumnXIsDifferent, "ColumnX")
@@ -508,7 +516,8 @@ namespace SqlBulkTools.IntegrationTests
                 list.Add(new ReservedColumnNameTest() { Key = i });
             }
 
-            bulk.Setup<ReservedColumnNameTest>(x => x.ForCollection(list))
+            bulk.Setup<ReservedColumnNameTest>()
+                .ForCollection(list)
                 .WithTable("ReservedColumnNameTests")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
@@ -530,7 +539,8 @@ namespace SqlBulkTools.IntegrationTests
 
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
@@ -555,7 +565,8 @@ namespace SqlBulkTools.IntegrationTests
 
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Description)
@@ -588,7 +599,8 @@ namespace SqlBulkTools.IntegrationTests
             _db.Books.AddRange(_randomizer.GetRandomCollection(60)); // Add some random items before test. 
             _db.SaveChanges();
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsert()
@@ -615,7 +627,8 @@ namespace SqlBulkTools.IntegrationTests
             List<Book> books = _randomizer.GetRandomCollection(30);
 
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .WithBulkCopyBatchSize(5000)
                 .AddColumn(x => x.Title)
@@ -659,7 +672,8 @@ namespace SqlBulkTools.IntegrationTests
             BulkInsert(books);
 
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .WithBulkCopyBatchSize(5000)
                 .AddColumn(x => x.ISBN)
@@ -688,7 +702,8 @@ namespace SqlBulkTools.IntegrationTests
             List<Book> books = _randomizer.GetRandomCollection(30);
             BulkInsert(books);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Description)
@@ -745,7 +760,8 @@ namespace SqlBulkTools.IntegrationTests
                 }
             };
 
-            bulk.Setup<TestDataType>(x => x.ForCollection(dataTypeTest))
+            bulk.Setup<TestDataType>()
+                .ForCollection(dataTypeTest)
                 .WithTable("TestDataTypes")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
@@ -802,7 +818,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkInsert(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .WithBulkCopyBatchSize(5000)
                 .AddColumn(x => x.Title)
@@ -822,7 +839,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkInsertAllColumns(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddAllColumns()
                 .TmpDisableAllNonClusteredIndexes()
@@ -837,7 +855,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkInsertOrUpdate(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.Title)
                 .AddColumn(x => x.Price)
@@ -858,7 +877,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkInsertOrUpdateAllColumns(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
@@ -876,8 +896,8 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkUpdate(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.Title)
                 .AddColumn(x => x.Price)

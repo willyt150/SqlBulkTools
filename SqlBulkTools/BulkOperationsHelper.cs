@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
-using System.Data.Common;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 [assembly: InternalsVisibleTo("SqlBulkTools.UnitTests")]

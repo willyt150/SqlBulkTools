@@ -102,7 +102,6 @@ namespace SqlBulkTools.UnitTests
         public void DataTableTools_GetColumn_WhenColumnRemovedFromSetup()
         {
             // Arrange
-            var expected = "PublishingDate";
             DataTableOperations dtOps = new DataTableOperations();
 
             dtOps.SetupDataTable<Book>()

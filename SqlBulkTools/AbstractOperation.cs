@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace SqlBulkTools
 {
@@ -13,6 +11,8 @@ namespace SqlBulkTools
     /// </summary>
     public abstract class AbstractOperation<T>
     {
+        #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+        // ReSharper disable InconsistentNaming
         internal readonly BulkOperationsHelper _helper;
         protected ColumnDirection _outputIdentity;
         protected BulkOperations _ext;
@@ -32,17 +32,7 @@ namespace SqlBulkTools
         protected IEnumerable<T> _list;
         protected List<string> _matchTargetOn;
         protected SqlBulkCopyOptions _sqlBulkCopyOptions;
-
-        /// <summary>
-        /// 
-        /// </summary>
-        protected AbstractOperation()
-        {
-            _helper = new BulkOperationsHelper();
-            _outputIdentityDic = new Dictionary<int, T>();
-            _outputIdentity = ColumnDirection.Input;
-            _matchTargetOn = new List<string>();
-        }
+        #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
         /// 
@@ -61,7 +51,7 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public AbstractOperation(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
+        protected AbstractOperation(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
             HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
             bool bulkCopyEnableStreaming,
@@ -81,7 +71,6 @@ namespace SqlBulkTools
             _bulkCopyBatchSize = bulkCopyBatchSize;
             _sqlBulkCopyOptions = sqlBulkCopyOptions;
             _ext = ext;
-
             _identityColumn = null;
             _helper = new BulkOperationsHelper();
             _outputIdentityDic = new Dictionary<int, T>();
@@ -130,7 +119,9 @@ namespace SqlBulkTools
         {
             if (_matchTargetOn.Count == 0)
             {
-                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. This is usually the primary key of your table but can also be more than one column depending on your business rules.");
+                throw new InvalidOperationException("MatchTargetOn list is empty when it's required for this operation. " +
+                                                    "This is usually the primary key of your table but can also be more than one " +
+                                                    "column depending on your business rules.");
             }
         }
 
@@ -142,7 +133,8 @@ namespace SqlBulkTools
         {
             if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
             {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
+                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use " +
+                                                    "the \'AddTmpDisableNonClusteredIndex\' method.");
             }
         }
     }

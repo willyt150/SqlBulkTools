@@ -64,7 +64,8 @@ namespace SqlBulkTools.IntegrationTests
             await BulkInsertAsync(books);
 
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .WithBulkCopyBatchSize(5000)
                 .AddColumn(x => x.ISBN)
@@ -220,7 +221,8 @@ namespace SqlBulkTools.IntegrationTests
 
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsertOrUpdate()
@@ -245,7 +247,8 @@ namespace SqlBulkTools.IntegrationTests
 
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Description)
@@ -277,7 +280,8 @@ namespace SqlBulkTools.IntegrationTests
             _db.Books.AddRange(_randomizer.GetRandomCollection(60)); // Add some random items before test. 
             await _db.SaveChangesAsync();
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddAllColumns()
                 .BulkInsert()
@@ -302,7 +306,8 @@ namespace SqlBulkTools.IntegrationTests
             List<Book> books = _randomizer.GetRandomCollection(30);
 
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .WithBulkCopyBatchSize(5000)
                 .AddColumn(x => x.Title)
@@ -332,7 +337,8 @@ namespace SqlBulkTools.IntegrationTests
             List<Book> books = _randomizer.GetRandomCollection(30);
             await BulkInsertAsync(books);
 
-            bulk.Setup<Book>(x => x.ForCollection(books))
+            bulk.Setup<Book>()
+                .ForCollection(books)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .AddColumn(x => x.Description)
@@ -353,7 +359,8 @@ namespace SqlBulkTools.IntegrationTests
         private async Task<long> BulkInsertAsync(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .WithSqlBulkCopyOptions(SqlBulkCopyOptions.TableLock)
                 .WithBulkCopyBatchSize(3000)
@@ -373,7 +380,8 @@ namespace SqlBulkTools.IntegrationTests
         private async Task<long> BulkInsertOrUpdateAsync(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.Title)
                 .AddColumn(x => x.Price)
@@ -394,7 +402,8 @@ namespace SqlBulkTools.IntegrationTests
         private async Task<long> BulkUpdateAsync(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.Title)
                 .AddColumn(x => x.Price)
@@ -415,7 +424,8 @@ namespace SqlBulkTools.IntegrationTests
         {
             BulkOperations bulk = new BulkOperations();
 
-            bulk.Setup<Book>(x => x.ForCollection(col))
+            bulk.Setup<Book>()
+                .ForCollection(col)
                 .WithTable("Books")
                 .AddColumn(x => x.ISBN)
                 .BulkDelete()
