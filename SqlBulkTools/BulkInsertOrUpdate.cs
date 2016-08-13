@@ -157,12 +157,13 @@ namespace SqlBulkTools
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, 
+                                _schema, conn, _disableIndexList, _disableAllIndexes);
                             command.ExecuteNonQuery();
                         }
 
                         string comm =
-                            _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.InsertOrUpdate) +
+                            _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.InsertOrUpdate, _identityColumn) +
                             "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) +
                             " WITH (HOLDLOCK) AS Target " +
                             "USING " + Constants.TempTableName + " AS Source " +
@@ -173,7 +174,7 @@ namespace SqlBulkTools
                             "WHEN NOT MATCHED BY TARGET THEN " +
                             _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
                             (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
-                            _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
+                            _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                 OperationType.InsertOrUpdate) + ";" +
                             "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
@@ -181,31 +182,14 @@ namespace SqlBulkTools
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, 
+                                _tableName, _schema, conn, _disableIndexList);
                             command.ExecuteNonQuery();
                         }
 
                         if (_outputIdentity == ColumnDirection.InputOutput)
                         {
-                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
-
-                            using (SqlDataReader reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    T item;
-
-                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
-                                    {
-                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
-                                    }
-
-                                }
-                            }
-
-                            command.CommandText = _helper.GetDropTmpTableCmd();
-                            command.ExecuteNonQuery();
-
+                            _helper.LoadFromTmpOutputTable(command, _identityColumn, _outputIdentityDic, OperationType.InsertOrUpdate, _list);
                         }
 
                         transaction.Commit();
@@ -279,12 +263,13 @@ namespace SqlBulkTools
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _schema, 
+                                conn, _disableIndexList, _disableAllIndexes);
                             await command.ExecuteNonQueryAsync();
                         }
 
                         // Updating destination table, and dropping temp table                       
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.InsertOrUpdate) + 
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.InsertOrUpdate, _identityColumn) + 
                                       "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
@@ -294,7 +279,7 @@ namespace SqlBulkTools
                                       "WHEN NOT MATCHED BY TARGET THEN " +
                                       _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
                                        (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
-                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
+                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                        OperationType.InsertOrUpdate) + ";" +
                                        "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
@@ -302,30 +287,16 @@ namespace SqlBulkTools
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
+                                _schema, conn, _disableIndexList);
                             await command.ExecuteNonQueryAsync();
                         }
 
                         if (_outputIdentity == ColumnDirection.InputOutput)
                         {
-                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
-
-                            using (SqlDataReader reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    T item;
-
-                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
-                                    {
-                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
-                                    }
-
-                                }
-                            }
-
-                            command.CommandText = _helper.GetDropTmpTableCmd();
-                            command.ExecuteNonQuery();
+                            await
+                                _helper.LoadFromTmpOutputTableAsync(command, _identityColumn, _outputIdentityDic,
+                                    OperationType.InsertOrUpdate, _list);
 
                         }
 

@@ -67,7 +67,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BulkOperationsAsyncIT.cs" />
-    <Compile Include="Common.cs" />
+    <Compile Include="FileHelper.cs" />
     <Compile Include="Data\DatabaseInitialiser.cs" />
     <Compile Include="Migrations\Configuration.cs" />
     <Compile Include="Model\CustomColumnMappingTest.cs" />

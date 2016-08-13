@@ -14,8 +14,8 @@ namespace SqlBulkTools
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public class BulkDelete<T> : AbstractOperation<T>, ITransaction
-    {               
-        
+    {
+
         private readonly SqlBulkCopyOptions _sqlBulkCopyOptions;
 
         /// <summary>
@@ -35,14 +35,14 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="disableIndexList"></param>
-        public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
-            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, 
+        public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
             bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
         {
             _list = list;
             _tableName = tableName;
             _schema = schema;
-            _columns = columns;            
+            _columns = columns;
             _disableIndexList = disableIndexList;
             _disableAllIndexes = disableAllIndexes;
             _customColumnMappings = customColumnMappings;
@@ -51,7 +51,7 @@ namespace SqlBulkTools
             _bulkCopyEnableStreaming = bulkCopyEnableStreaming;
             _bulkCopyNotifyAfter = bulkCopyNotifyAfter;
             _bulkCopyBatchSize = bulkCopyBatchSize;
-            _sqlBulkCopyOptions = sqlBulkCopyOptions;            
+            _sqlBulkCopyOptions = sqlBulkCopyOptions;
             _ext = ext;
             _identityColumn = null;
             _ext.SetBulkExt(this);
@@ -106,7 +106,7 @@ namespace SqlBulkTools
             }
 
             base.IndexCheck();
-            base.MatchTargetCheck();                       
+            base.MatchTargetCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
@@ -119,7 +119,8 @@ namespace SqlBulkTools
                 conn.Open();
                 var dtCols = _helper.GetDatabaseSchema(conn, _schema, _tableName);
 
-                using (SqlTransaction transaction = conn.BeginTransaction()) { 
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
 
                     try
                     {
@@ -132,53 +133,38 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         command.ExecuteNonQuery();
 
-                        _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, 
+                        _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming,
                             _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
-                       
+
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, 
+                                _schema, conn, _disableIndexList, _disableAllIndexes);
                             command.ExecuteNonQuery();
                         }
 
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Delete) + 
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
                                       "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
-                                      _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(), 
+                                      _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                       Constants.SourceAlias, Constants.TargetAlias) +
                                       "WHEN MATCHED THEN DELETE " +
-                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
-                                      OperationType.Delete) + 
+                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
+                                      OperationType.Delete) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
                         command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
+                                _schema, conn, _disableIndexList);
                             command.ExecuteNonQuery();
                         }
 
                         if (_outputIdentity == ColumnDirection.InputOutput)
                         {
-                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
-
-                            using (SqlDataReader reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    T item;
-
-                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
-                                    {
-                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
-                                    }
-
-                                }
-                            }
-
-                            command.CommandText = _helper.GetDropTmpTableCmd();
-                            command.ExecuteNonQuery();
+                            _helper.LoadFromTmpOutputTable(command, _identityColumn, _outputIdentityDic, OperationType.Delete, _list);
                         }
 
                         transaction.Commit();
@@ -239,22 +225,23 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         await command.ExecuteNonQueryAsync();
 
-                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);                        
-                       
+                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName,
+                                _schema, conn, _disableIndexList, _disableAllIndexes);
                             await command.ExecuteNonQueryAsync();
                         }
 
                         // Updating destination table, and dropping temp table
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Delete) + 
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
                                       "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                       Constants.SourceAlias, Constants.TargetAlias) +
                                       "WHEN MATCHED THEN DELETE " +
-                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, "#TmpOutput",
+                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                       OperationType.Delete) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
@@ -262,30 +249,16 @@ namespace SqlBulkTools
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
+                                _schema, conn, _disableIndexList);
                             await command.ExecuteNonQueryAsync();
                         }
 
                         if (_outputIdentity == ColumnDirection.InputOutput)
                         {
-                            command.CommandText = "SELECT " + Constants.InternalId + ", " + _identityColumn + " FROM #TmpOutput;";
-
-                            using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                            {
-                                while (reader.Read())
-                                {
-                                    T item;
-
-                                    if (_outputIdentityDic.TryGetValue((int)reader[0], out item))
-                                    {
-                                        item.GetType().GetProperty(_identityColumn).SetValue(item, reader[1], null);
-                                    }
-
-                                }
-                            }
-
-                            command.CommandText = _helper.GetDropTmpTableCmd();
-                            await command.ExecuteNonQueryAsync();
+                            await
+                                _helper.LoadFromTmpOutputTableAsync(command, _identityColumn, _outputIdentityDic,
+                                OperationType.Delete, _list);
                         }
 
                         transaction.Commit();

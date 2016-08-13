@@ -6,6 +6,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 
 namespace SqlBulkTools
@@ -121,13 +122,13 @@ namespace SqlBulkTools
                                 _bulkCopyNotifyAfter, _bulkCopyTimeout);
 
                             SqlCommand command = conn.CreateCommand();
-
                             command.Connection = conn;
                             command.Transaction = transaction;
 
                             if (_disableAllIndexes || (_disableIndexList != null && _disableIndexList.Any()))
                             {
-                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, 
+                                    _schema, conn, _disableIndexList, _disableAllIndexes);
                                 command.ExecuteNonQuery();
                             }
 
@@ -140,32 +141,11 @@ namespace SqlBulkTools
                                 _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
                                     _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
 
-                                string fullTableName = _helper.GetFullQualifyingTableName(conn.Database, _schema,
-                                    _tableName);
-
-                                string comm =
-                                _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Insert) +
-                                _helper.BuildInsertIntoSet(_columns, _identityColumn, fullTableName) + "OUTPUT INSERTED.Id INTO #TmpOutput(Id)" + " " + _helper.BuildSelectSet(_columns, Constants.SourceAlias, _identityColumn) + " FROM " + Constants.TempTableName + " AS Source; " +
-                                "DROP TABLE " + Constants.TempTableName + ";";
-                                command.CommandText = comm;
+                                command.CommandText = _helper.GetInsertIntoStagingTableCmd(command, conn, _schema, _tableName,
+                                    _columns, _identityColumn, _outputIdentity);
                                 command.ExecuteNonQuery();
 
-                                command.CommandText = "SELECT " + _identityColumn + " FROM #TmpOutput;";
-
-                                using (SqlDataReader reader = command.ExecuteReader())
-                                {
-                                    var items = _list.ToList();
-                                    int counter = 0;
-
-                                    while (reader.Read())
-                                    {
-                                        items[counter].GetType().GetProperty(_identityColumn).SetValue(items[counter], reader[0], null);
-                                        counter++;
-                                    }
-                                }
-
-                                command.CommandText = _helper.GetDropTmpTableCmd();
-                                command.ExecuteNonQuery();
+                                _helper.LoadFromTmpOutputTable(command, _identityColumn, _outputIdentityDic, OperationType.Insert, _list);
 
                             }
                             
@@ -174,7 +154,8 @@ namespace SqlBulkTools
 
                             if (_disableAllIndexes || (_disableIndexList != null && _disableIndexList.Any()))
                             {
-                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList, _disableAllIndexes);
+                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
+                                    _schema, conn, _disableIndexList, _disableAllIndexes);
                                 command.ExecuteNonQuery();
                             }
 
@@ -212,10 +193,7 @@ namespace SqlBulkTools
                 return;
             }
 
-            if (_disableAllIndexes && (_disableIndexList != null && _disableIndexList.Any()))
-            {
-                throw new InvalidOperationException("Invalid setup. If \'TmpDisableAllNonClusteredIndexes\' is invoked, you can not use the \'AddTmpDisableNonClusteredIndex\' method.");
-            }
+            base.IndexCheck();
 
             DataTable dt = _helper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = _helper.ConvertListToDataTable(dt, _list, _columns);
@@ -251,7 +229,8 @@ namespace SqlBulkTools
 
                             if (_disableAllIndexes || (_disableIndexList != null && _disableIndexList.Any()))
                             {
-                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _disableIndexList, _disableAllIndexes);
+                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, 
+                                    _schema, conn, _disableIndexList, _disableAllIndexes);
                                 await command.ExecuteNonQueryAsync();
                             }
 
@@ -264,32 +243,13 @@ namespace SqlBulkTools
                                 _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
                                     _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
 
-                                string fullTableName = _helper.GetFullQualifyingTableName(conn.Database, _schema,
-                                    _tableName);
-
-                                string comm =
-                                _helper.GetOutputCreateTableCmd(_outputIdentity, "#TmpOutput", OperationType.Insert) +
-                                _helper.BuildInsertIntoSet(_columns, _identityColumn, fullTableName) + "OUTPUT INSERTED.Id INTO #TmpOutput(Id)" + " " + _helper.BuildSelectSet(_columns, Constants.SourceAlias, _identityColumn) + " FROM " + Constants.TempTableName + " AS Source; " +
-                                "DROP TABLE " + Constants.TempTableName + ";";
-                                command.CommandText = comm;
+                                command.CommandText = _helper.GetInsertIntoStagingTableCmd(command, conn, _schema, _tableName,
+                                    _columns, _identityColumn, _outputIdentity);
                                 await command.ExecuteNonQueryAsync();
 
-                                command.CommandText = "SELECT " + _identityColumn + " FROM #TmpOutput;";
-
-                                using (SqlDataReader reader = await command.ExecuteReaderAsync())
-                                {
-                                    var items = _list.ToList();
-                                    int counter = 0;
-
-                                    while (reader.Read())
-                                    {
-                                        items[counter].GetType().GetProperty(_identityColumn).SetValue(items[counter], reader[0], null);
-                                        counter++;
-                                    }
-                                }
-
-                                command.CommandText = _helper.GetDropTmpTableCmd();
-                                await command.ExecuteNonQueryAsync();
+                                await
+                                    _helper.LoadFromTmpOutputTableAsync(command, _identityColumn, _outputIdentityDic,
+                                        OperationType.Insert, _list);
 
                             }
 
@@ -298,7 +258,8 @@ namespace SqlBulkTools
 
                             if (_disableAllIndexes || (_disableIndexList != null && _disableIndexList.Any()))
                             {
-                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _disableIndexList, _disableAllIndexes);
+                                command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _schema, 
+                                    conn, _disableIndexList, _disableAllIndexes);
                                 await command.ExecuteNonQueryAsync();
                             }
                             transaction.Commit();

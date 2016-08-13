@@ -151,14 +151,16 @@ namespace SqlBulkTools
         {
             StringBuilder command = new StringBuilder();
 
-            command.Append("ON " + "[" + targetAlias + "]" + "." + "[" + updateOn[0] + "]" + " = " + "[" + sourceAlias + "]" + "." + "[" + updateOn[0] + "]" + " ");
+            command.Append("ON " + "[" + targetAlias + "]" + "." + "[" + updateOn[0] + "]" + " = " + "[" + sourceAlias + "]" + "." 
+                + "[" + updateOn[0] + "]" + " ");
 
             if (updateOn.Length > 1)
             {
                 // Start from index 1 to just append "AND" conditions
                 for (int i = 1; i < updateOn.Length; i++)
                 {
-                    command.Append("AND " + "[" + targetAlias + "]" + "." + "[" + updateOn[i] + "]" + " = " + "[" + sourceAlias + "]" + "." + "[" + updateOn[i] + "]" + " ");
+                    command.Append("AND " + "[" + targetAlias + "]" + "." + "[" + updateOn[i] + "]" + " = " + "[" + 
+                        sourceAlias + "]" + "." + "[" + updateOn[i] + "]" + " ");
                 }
             }
 
@@ -177,7 +179,8 @@ namespace SqlBulkTools
                 if (identityColumn != null && column != identityColumn || identityColumn == null)
                 {
                     if (column != Constants.InternalId)
-                        paramsSeparated.Add("[" + targetAlias + "]" + "." + "[" + column + "]" + " = " + "[" + sourceAlias + "]" + "." + "[" + column + "]");
+                        paramsSeparated.Add("[" + targetAlias + "]" + "." + "[" + column + "]" + " = " + "[" + sourceAlias + "]" + "." 
+                            + "[" + column + "]");
                 }
             }
 
@@ -283,7 +286,8 @@ namespace SqlBulkTools
             return memberExpr.Member.Name;
         }
 
-        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings, List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
+        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings, 
+            List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
         {
             if (columns == null)
                 return null;
@@ -319,7 +323,8 @@ namespace SqlBulkTools
             return dataTable;
         }
 
-        public DataTable ConvertListToDataTable<T>(DataTable dataTable, IEnumerable<T> list, HashSet<string> columns, Dictionary<int, T> outputIdentityDic = null)
+        public DataTable ConvertListToDataTable<T>(DataTable dataTable, IEnumerable<T> list, HashSet<string> columns,
+            Dictionary<int, T> outputIdentityDic = null)
         {
 
             PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -478,7 +483,8 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="bulkCopyNotifyAfter"></param>
         /// <param name="bulkCopyTimeout"></param>
-        internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout)
+        internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, 
+            int? bulkCopyNotifyAfter, int bulkCopyTimeout)
         {
             bulkcopy.EnableStreaming = bulkCopyEnableStreaming;
 
@@ -555,22 +561,25 @@ namespace SqlBulkTools
                 sb.Append("OUTPUT INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + identityColumn + "); ");
 
             else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update)
-                sb.Append("OUTPUT Source." + Constants.InternalId + ", INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + Constants.InternalId + ", " + identityColumn + "); ");
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", INSERTED." + identityColumn + " INTO " + tmpTableName 
+                    + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
             else if (operation == OperationType.Delete)
-                sb.Append("OUTPUT Source." + Constants.InternalId + ", DELETED." + identityColumn + " INTO " + tmpTableName + "(" + Constants.InternalId + ", " + identityColumn + "); ");
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", DELETED." + identityColumn + " INTO " + tmpTableName 
+                    + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
             return sb.ToString();
         }
 
-        internal string GetOutputCreateTableCmd(ColumnDirection outputIdentity, string tmpTablename, OperationType operation)
+        internal string GetOutputCreateTableCmd(ColumnDirection outputIdentity, string tmpTablename, OperationType operation, string identityColumn)
         {
 
             if (operation == OperationType.Insert)
-                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + "Id int); " : "");
+                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + "[" + identityColumn + "] int); " : "");
 
             else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update || operation == OperationType.Delete)
-                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + Constants.InternalId + " int, Id int); " : "");
+                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" 
+                    + "[" + Constants.InternalId + "]" + " int, [" + identityColumn + "] int); " : "");
 
             return string.Empty;
         }
@@ -580,9 +589,9 @@ namespace SqlBulkTools
             return "DROP TABLE " + Constants.TempOutputTableName + ";";
         }
 
-        internal string GetIndexManagementCmd(string action, string table, HashSet<string> disableIndexList, bool disableAllIndexes = false)
+        internal string GetIndexManagementCmd(string action, string tableName, 
+            string schema, SqlConnection conn, HashSet<string> disableIndexList, bool disableAllIndexes = false)
         {
-            //AND sys.objects.name = 'Books' AND sys.indexes.name = 'IX_Title'
             StringBuilder sb = new StringBuilder();
 
             if (disableIndexList != null && disableIndexList.Any())
@@ -597,11 +606,12 @@ namespace SqlBulkTools
 
             string cmd = "DECLARE @sql AS VARCHAR(MAX)=''; " +
                                 "SELECT @sql = @sql + " +
-                                "'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' " + action + ";'" +
+                                "'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' " + action + ";' " +
                                 "FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id " +
                                 "WHERE sys.indexes.type_desc = 'NONCLUSTERED' " +
-                                "AND sys.objects.type_desc = 'USER_TABLE'" +
-                                " AND sys.objects.name = '" + table + "'" + (sb.Length > 0 ? sb.ToString() : "") + "; EXEC(@sql);";
+                                "AND sys.objects.type_desc = 'USER_TABLE' " +
+                                "AND sys.objects.name = '" + GetFullQualifyingTableName(conn.Database, schema, tableName)
+                                + "'" + (sb.Length > 0 ? sb.ToString() : "") + "; EXEC(@sql);";
 
             return cmd;
         }
@@ -621,12 +631,18 @@ namespace SqlBulkTools
             restrictions[2] = tableName;
             var dtCols = conn.GetSchema("Columns", restrictions);
 
-            if (dtCols.Rows.Count == 0 && schema != null) throw new InvalidOperationException("Table name '" + tableName + "\' with schema name \'" + schema + "\' not found. Check your setup and try again.");
-            if (dtCols.Rows.Count == 0) throw new InvalidOperationException("Table name \'" + tableName + "\' not found. Check your setup and try again.");
+            if (dtCols.Rows.Count == 0 && schema != null)
+                throw new InvalidOperationException("Table name '" + tableName 
+                + "\' with schema name \'" + schema + "\' not found. Check your setup and try again.");
+
+            if (dtCols.Rows.Count == 0)
+                throw new InvalidOperationException("Table name \'" + tableName 
+                + "\' not found. Check your setup and try again.");
             return dtCols;
         }
 
-        internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
+        internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming, 
+            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
@@ -640,7 +656,8 @@ namespace SqlBulkTools
             }
         }
 
-        internal async Task InsertToTmpTableAsync(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
+        internal async Task InsertToTmpTableAsync(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
+            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
@@ -652,6 +669,124 @@ namespace SqlBulkTools
 
                 await bulkcopy.WriteToServerAsync(dt);
             }
+        }
+
+        internal void LoadFromTmpOutputTable<T>(SqlCommand command, string identityColumn, Dictionary<int, T> outputIdentityDic, 
+            OperationType operationType, IEnumerable<T> list)
+        {
+            if (operationType == OperationType.InsertOrUpdate
+                || operationType == OperationType.Update
+                || operationType == OperationType.Delete)
+            {
+                command.CommandText = "SELECT " + Constants.InternalId + ", " + identityColumn + " FROM " 
+                    + Constants.TempOutputTableName + ";";
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        T item;
+
+                        if (outputIdentityDic.TryGetValue((int) reader[0], out item))
+                        {
+                            item.GetType().GetProperty(identityColumn).SetValue(item, reader[1], null);
+                        }
+
+                    }
+                }
+
+                command.CommandText = GetDropTmpTableCmd();
+                command.ExecuteNonQuery();
+            }
+
+            if (operationType == OperationType.Insert)
+            {
+                command.CommandText = "SELECT " + identityColumn + " FROM " + Constants.TempOutputTableName + ";";
+
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    var items = list.ToList();
+                    int counter = 0;
+
+                    while (reader.Read())
+                    {
+                        items[counter].GetType().GetProperty(identityColumn).SetValue(items[counter], reader[0], null);
+                        counter++;
+                    }
+                }
+
+                command.CommandText = GetDropTmpTableCmd();
+                command.ExecuteNonQuery();
+            }
+        }
+
+        internal async Task LoadFromTmpOutputTableAsync<T>(SqlCommand command, string identityColumn,
+            Dictionary<int, T> outputIdentityDic, OperationType operationType, IEnumerable<T> list)
+        {
+            if (operationType == OperationType.InsertOrUpdate
+                || operationType == OperationType.Update
+                || operationType == OperationType.Delete)
+            {
+                command.CommandText = "SELECT " + Constants.InternalId + ", " + identityColumn + " FROM "
+                    + Constants.TempOutputTableName + ";";
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    while (reader.Read())
+                    {
+                        T item;
+
+                        if (outputIdentityDic.TryGetValue((int)reader[0], out item))
+                        {
+                            item.GetType().GetProperty(identityColumn).SetValue(item, reader[1], null);
+                        }
+
+                    }
+                }
+
+                command.CommandText = GetDropTmpTableCmd();
+                await command.ExecuteNonQueryAsync();
+            }
+
+            if (operationType == OperationType.Insert)
+            {
+                command.CommandText = "SELECT " + identityColumn + " FROM " + Constants.TempOutputTableName + ";";
+
+                using (SqlDataReader reader = await command.ExecuteReaderAsync())
+                {
+                    var items = list.ToList();
+                    int counter = 0;
+
+                    while (reader.Read())
+                    {
+                        items[counter].GetType().GetProperty(identityColumn).SetValue(items[counter], reader[0], null);
+                        counter++;
+                    }
+                }
+
+                command.CommandText = GetDropTmpTableCmd();
+                await command.ExecuteNonQueryAsync();
+            }
+        }
+
+        internal string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName, 
+            HashSet<string> columns, string identityColumn, ColumnDirection outputIdentity)
+        {
+
+            string fullTableName = GetFullQualifyingTableName(conn.Database, schema,
+                tableName);
+
+            string comm =
+            GetOutputCreateTableCmd(outputIdentity, Constants.TempOutputTableName, 
+            OperationType.Insert, identityColumn) +
+            BuildInsertIntoSet(columns, identityColumn, fullTableName)
+            + "OUTPUT INSERTED.[" + identityColumn + "] INTO "
+            + Constants.TempOutputTableName + "([" + identityColumn + "]) "
+            + BuildSelectSet(columns, Constants.SourceAlias, identityColumn)
+            + " FROM " + Constants.TempTableName + " AS Source; " +
+            "DROP TABLE " + Constants.TempTableName + ";";
+
+            return comm;
         }
     }
 
