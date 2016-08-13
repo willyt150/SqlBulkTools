@@ -63,12 +63,13 @@
     <Compile Include="DataTableOperations\IDataTableOperations.cs" />
     <Compile Include="IBulkOperations.cs" />
     <Compile Include="DataTableOperations\IDataTableTransaction.cs" />
+    <Compile Include="Exception\IdentityException.cs" />
     <Compile Include="ITransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DataTableOperations\SetupDataTable.cs" />
     <Compile Include="Setup.cs" />
     <Compile Include="BulkOperations.cs" />
-    <Compile Include="IdentityException.cs" />
+    <Compile Include="Exception\SqlBulkToolsException.cs" />
     <Compile Include="Table.cs" />
     <Compile Include="CollectionSelect.cs" />
   </ItemGroup>
