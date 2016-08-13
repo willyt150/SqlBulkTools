@@ -66,7 +66,7 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Adds all properties in model that are either value or string type. 
+        /// Adds all properties in model that are either value, string or byte array type. 
         /// </summary>
         /// <returns></returns>
         public AllColumnSelect<T> AddAllColumns()

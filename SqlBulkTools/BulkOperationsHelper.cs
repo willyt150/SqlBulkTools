@@ -17,23 +17,65 @@ namespace SqlBulkTools
 {
     internal class BulkOperationsHelper
     {
+<<<<<<< HEAD:SqlBulkTools/BulkOperationsHelper.cs
         internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
+=======
+        internal struct PrecisionType
+        {
+            public string NumericPrecision { get; set; }
+            public string NumericScale { get; set; }
+        }
+
+        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, bool? outputIdentity = null)
+>>>>>>> master:SqlBulkTools/BulkOperationsHelpers.cs
         {
             Dictionary<string, string> actualColumns = new Dictionary<string, string>();
             Dictionary<string, string> actualColumnsMaxCharLength = new Dictionary<string, string>();
+            Dictionary<string, PrecisionType> actualColumnsNumericPrecision = new Dictionary<string, PrecisionType>();
+            Dictionary<string, string> actualColumnsDateTimePrecision = new Dictionary<string, string>();
 
 
             foreach (DataRow row in schema.Rows)
             {
+                string columnType = row["DATA_TYPE"].ToString();
+                string columnName = row["COLUMN_NAME"].ToString();
+
                 actualColumns.Add(row["COLUMN_NAME"].ToString(), row["DATA_TYPE"].ToString());
-                actualColumnsMaxCharLength.Add(row["COLUMN_NAME"].ToString(),
-                    row["CHARACTER_MAXIMUM_LENGTH"].ToString());
+
+                if (columnType == "varchar" || columnType == "nvarchar" || 
+                    columnType == "char" || columnType == "binary" || 
+                    columnType == "varbinary" || columnType == "nchar")
+
+                {
+                    actualColumnsMaxCharLength.Add(row["COLUMN_NAME"].ToString(),
+                        row["CHARACTER_MAXIMUM_LENGTH"].ToString());
+                }
+
+                if (columnType == "datetime2" || columnType == "time")
+                {
+                    actualColumnsDateTimePrecision.Add(row["COLUMN_NAME"].ToString(), row["DATETIME_PRECISION"].ToString());
+                }
+
+                if (columnType == "numeric" || columnType == "decimal")
+                {
+                    PrecisionType p = new PrecisionType
+                    {
+                        NumericPrecision = row["NUMERIC_PRECISION"].ToString(),
+                        NumericScale = row["NUMERIC_SCALE"].ToString()
+                    };
+                    actualColumnsNumericPrecision.Add(columnName, p);
+                }
+
             }
 
             StringBuilder command = new StringBuilder();
 
+<<<<<<< HEAD:SqlBulkTools/BulkOperationsHelper.cs
 
             command.Append("CREATE TABLE " + Constants.TempTableName + "(");
+=======
+            command.Append("CREATE TABLE #TmpTable(");
+>>>>>>> master:SqlBulkTools/BulkOperationsHelpers.cs
 
             List<string> paramList = new List<string>();
 
@@ -44,17 +86,9 @@ namespace SqlBulkTools
                 string columnType;
                 if (actualColumns.TryGetValue(column, out columnType))
                 {
-                    if (columnType == "varchar" || columnType == "nvarchar")
-                    {
-                        string maxCharLength;
-                        if (actualColumnsMaxCharLength.TryGetValue(column, out maxCharLength))
-                        {
-                            if (maxCharLength == "-1")
-                                maxCharLength = "max";
-
-                            columnType = columnType + "(" + maxCharLength + ")";
-                        }
-                    }
+                    columnType = GetVariableCharType(column, columnType, actualColumnsMaxCharLength);
+                    columnType = GetDecimalPrecisionAndScaleType(column, columnType, actualColumnsNumericPrecision);
+                    columnType = GetDateTimePrecisionType(column, columnType, actualColumnsDateTimePrecision);
                 }
 
                 paramList.Add("[" + column + "]" + " " + columnType);
@@ -71,6 +105,55 @@ namespace SqlBulkTools
             command.Append(");");
 
             return command.ToString();
+        }
+
+        private string GetVariableCharType(string column, string columnType, Dictionary<string, string> actualColumnsMaxCharLength)
+        {
+            if (columnType == "varchar" || columnType == "nvarchar" ||
+                    columnType == "char" || columnType == "binary" ||
+                    columnType == "varbinary" || columnType == "nchar")
+            {
+                string maxCharLength;
+                if (actualColumnsMaxCharLength.TryGetValue(column, out maxCharLength))
+                {
+                    if (maxCharLength == "-1")
+                        maxCharLength = "max";
+
+                    columnType = columnType + "(" + maxCharLength + ")";
+                }
+            }
+
+            return columnType;
+        }
+
+        private string GetDecimalPrecisionAndScaleType(string column, string columnType, Dictionary<string, PrecisionType> actualColumnsPrecision)
+        {
+            if (columnType == "decimal" || columnType == "numeric")
+            {
+                PrecisionType p;
+
+                if (actualColumnsPrecision.TryGetValue(column, out p))
+                {
+                    columnType = columnType + "(" + p.NumericPrecision + ", " + p.NumericScale + ")";
+                }
+            }
+
+            return columnType;
+        }
+
+        private string GetDateTimePrecisionType(string column, string columnType, Dictionary<string, string> actualColumnsDateTimePrecision)
+        {
+            if (columnType == "datetime2" || columnType == "time")
+            {
+                string dateTimePrecision;
+                if (actualColumnsDateTimePrecision.TryGetValue(column, out dateTimePrecision))
+                {
+
+                    columnType = columnType + "(" + dateTimePrecision + ")";
+                }
+            }
+
+            return columnType;
         }
 
         internal string BuildJoinConditionsForUpdateOrInsert(string[] updateOn, string sourceAlias, string targetAlias)
@@ -455,8 +538,11 @@ namespace SqlBulkTools
 
             for (int i = 0; i < props.Length; i++)
             {
-                var type2 = props[i].GetType();
-                if (props[i].PropertyType.IsValueType || props[i].PropertyType == typeof(string))
+                if (props[i].PropertyType.IsValueType || 
+                    props[i].PropertyType == typeof(string) || 
+                    props[i].PropertyType == typeof(byte) ||
+                     props[i].PropertyType == typeof(byte[])
+                    )
                 {
                     columns.Add(props[i].Name);
                 }
