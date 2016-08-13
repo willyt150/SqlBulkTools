@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
@@ -57,11 +58,11 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public ColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public SingularColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new ColumnSelect<T>(_list, _tableName, Columns, _schema, 
+            return new SingularColumnSelect<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
         }
 

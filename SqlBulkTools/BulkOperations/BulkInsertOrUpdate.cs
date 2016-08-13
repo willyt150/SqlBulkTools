@@ -6,14 +6,16 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class BulkDelete<T> : AbstractOperation<T>, ITransaction
-    {
+    public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
+    {      
+        private bool _deleteWhenNotMatchedFlag;       
 
         /// <summary>
         /// 
@@ -22,6 +24,7 @@ namespace SqlBulkTools
         /// <param name="tableName"></param>
         /// <param name="schema"></param>
         /// <param name="columns"></param>
+        /// <param name="disableIndexList"></param>
         /// <param name="disableAllIndexes"></param>
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
@@ -31,15 +34,15 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        /// <param name="disableIndexList"></param>
-        public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
-            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
-            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
-
+        public BulkInsertOrUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
-                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
+            bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
             _ext.SetBulkExt(this);
+            _deleteWhenNotMatchedFlag = false;
         }
 
         /// <summary>
@@ -49,10 +52,15 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        public BulkDelete<T> MatchTargetOn(Expression<Func<T, object>> columnName)
+        public BulkInsertOrUpdate<T> MatchTargetOn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
+
+            if (propertyName == null)
+                throw new NullReferenceException("MatchTargetOn column name can't be null.");
+
             _matchTargetOn.Add(propertyName);
+
             return this;
         }
 
@@ -62,9 +70,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        public BulkDelete<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
+        public BulkInsertOrUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
-            base.SetIdentity(columnName);
+            SetIdentity(columnName);
             return this;
         }
 
@@ -75,9 +83,22 @@ namespace SqlBulkTools
         /// <param name="columnName"></param>
         /// <param name="outputIdentity"></param>
         /// <returns></returns>
-        public BulkDelete<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
+        public BulkInsertOrUpdate<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
         {
             base.SetIdentity(columnName, outputIdentity);
+            return this;
+        }
+
+
+
+        /// <summary>
+        /// If a target record can't be matched to a source record, it's deleted. Notes: (1) This is false by default. (2) Use at your own risk.
+        /// </summary>
+        /// <param name="flag"></param>
+        /// <returns></returns>
+        public BulkInsertOrUpdate<T> DeleteWhenNotMatched(bool flag)
+        {
+            _deleteWhenNotMatchedFlag = flag;
             return this;
         }
 
@@ -95,7 +116,7 @@ namespace SqlBulkTools
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
 
             // Must be after ToDataTable is called. 
-            _helper.DoColumnMappings(_customColumnMappings, _columns);
+            _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -104,7 +125,6 @@ namespace SqlBulkTools
 
                 using (SqlTransaction transaction = conn.BeginTransaction())
                 {
-
                     try
                     {
                         SqlCommand command = conn.CreateCommand();
@@ -116,8 +136,8 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         command.ExecuteNonQuery();
 
-                        _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming,
-                            _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                        _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -126,33 +146,56 @@ namespace SqlBulkTools
                             command.ExecuteNonQuery();
                         }
 
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
-                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
-                                      "USING " + Constants.TempTableName + " AS Source " +
-                                      _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
-                                      Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN DELETE " +
-                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Delete) +
-                                      "DROP TABLE " + Constants.TempTableName + ";";
+                        string comm =
+                            _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.InsertOrUpdate, _identityColumn) +
+                            "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) +
+                            " WITH (HOLDLOCK) AS Target " +
+                            "USING " + Constants.TempTableName + " AS Source " +
+                            _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
+                                Constants.SourceAlias, Constants.TargetAlias) +
+                            "WHEN MATCHED THEN " +
+                            _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
+                            "WHEN NOT MATCHED BY TARGET THEN " +
+                            _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
+                            (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
+                            _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
+                                OperationType.InsertOrUpdate) + ";" +
+                            "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
                         command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
-                                _schema, conn, _disableIndexList);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, 
+                                _tableName, _schema, conn, _disableIndexList);
                             command.ExecuteNonQuery();
                         }
 
                         if (_outputIdentity == ColumnDirection.InputOutput)
                         {
-                            _helper.LoadFromTmpOutputTable(command, _identityColumn, _outputIdentityDic, OperationType.Delete, _list);
+                            _helper.LoadFromTmpOutputTable(command, _identityColumn, _outputIdentityDic, OperationType.InsertOrUpdate, _list);
                         }
 
                         transaction.Commit();
 
                     }
+
+                    catch (SqlException e)
+                    {
+                        for (int i = 0; i < e.Errors.Count; i++)
+                        {
+                            // Error 8102 is identity error. 
+                            if (e.Errors[i].Number == 8102)
+                            {
+                                // Expensive but neccessary to inform user of an important configuration setup. 
+                                throw new IdentityException(e.Errors[i].Message);
+                            }
+                        }
+
+                        transaction.Rollback();
+                        throw;
+                    }
+
                     catch (Exception)
                     {
                         transaction.Rollback();
@@ -166,19 +209,13 @@ namespace SqlBulkTools
             }
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="connectionName"></param>
-        /// <param name="credentials"></param>
-        /// <param name="connection"></param>
-        /// <returns></returns>
         async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             if (!_list.Any())
             {
                 return;
             }
+
             base.IndexCheck();
             base.MatchTargetCheck();
 
@@ -186,16 +223,14 @@ namespace SqlBulkTools
             dt = _helper.ConvertListToDataTable(dt, _list, _columns, _outputIdentityDic);
 
             // Must be after ToDataTable is called. 
-            _helper.DoColumnMappings(_customColumnMappings, _columns);
+            _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
                 conn.Open();
                 var dtCols = _helper.GetDatabaseSchema(conn, _schema, _tableName);
-
                 using (SqlTransaction transaction = conn.BeginTransaction())
                 {
-
                     try
                     {
                         SqlCommand command = conn.CreateCommand();
@@ -207,25 +242,30 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         await command.ExecuteNonQueryAsync();
 
-                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName,
-                                _schema, conn, _disableIndexList, _disableAllIndexes);
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, _schema, 
+                                conn, _disableIndexList, _disableAllIndexes);
                             await command.ExecuteNonQueryAsync();
                         }
 
-                        // Updating destination table, and dropping temp table
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
+                        // Updating destination table, and dropping temp table                       
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.InsertOrUpdate, _identityColumn) + 
                                       "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
-                                      Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN DELETE " +
-                                      _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Delete) +
-                                      "DROP TABLE " + Constants.TempTableName + ";";
+                                          Constants.SourceAlias, Constants.TargetAlias) +
+                                      "WHEN MATCHED THEN " +
+                                      _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
+                                      "WHEN NOT MATCHED BY TARGET THEN " +
+                                      _helper.BuildInsertSet(_columns, Constants.SourceAlias, _identityColumn) +
+                                       (_deleteWhenNotMatchedFlag ? " WHEN NOT MATCHED BY SOURCE THEN DELETE " : " ") +
+                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
+                                       OperationType.InsertOrUpdate) + ";" +
+                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
                         await command.ExecuteNonQueryAsync();
 
@@ -240,12 +280,30 @@ namespace SqlBulkTools
                         {
                             await
                                 _helper.LoadFromTmpOutputTableAsync(command, _identityColumn, _outputIdentityDic,
-                                OperationType.Delete, _list);
+                                    OperationType.InsertOrUpdate, _list);
+
                         }
 
                         transaction.Commit();
 
                     }
+
+                    catch (SqlException e)
+                    {
+                        for (int i = 0; i < e.Errors.Count; i++)
+                        {
+                            // Error 8102 is identity error. 
+                            if (e.Errors[i].Number == 8102)
+                            {
+                                // Expensive call but neccessary to inform user of an important configuration setup. 
+                                throw new IdentityException(e.Errors[i].Message);
+                            }
+                        }
+
+                        transaction.Rollback();
+                        throw;
+                    }
+
                     catch (Exception)
                     {
                         transaction.Rollback();

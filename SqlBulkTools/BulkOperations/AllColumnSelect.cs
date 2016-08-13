@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class ColumnSelect<T> : AbstractColumnSelect<T>
+    public class AllColumnSelect<T> : AbstractColumnSelect<T>
     {
         /// <summary>
         /// 
@@ -25,26 +26,12 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
-        public ColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
+        public AllColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext) :
             base(list, tableName, columns, schema, sqlTimeout, bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
         {
 
-        }
-
-
-        /// <summary>
-        /// Add each column that you want to include in the query. Only include the columns that are relevant to the 
-        /// procedure for best performance. 
-        /// </summary>
-        /// <param name="columnName">Column name as represented in database</param>
-        /// <returns></returns>
-        public ColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
-        {
-            var propertyName = _helper.GetPropertyName(columnName);
-            _columns.Add(propertyName);
-            return this;
         }
 
         /// <summary>
@@ -59,7 +46,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public ColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public AllColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = _helper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
@@ -72,7 +59,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="indexName"></param>
         /// <returns></returns>
-        public ColumnSelect<T> AddTmpDisableNonClusteredIndex(string indexName)
+        public AllColumnSelect<T> AddTmpDisableNonClusteredIndex(string indexName)
         {
             if (indexName == null)
                 throw new ArgumentNullException(nameof(indexName));
@@ -88,9 +75,29 @@ namespace SqlBulkTools
         /// consequences before using this option.  
         /// </summary>
         /// <returns></returns>
-        public ColumnSelect<T> TmpDisableAllNonClusteredIndexes()
+        public AllColumnSelect<T> TmpDisableAllNonClusteredIndexes()
         {
             _disableAllIndexes = true;
+            return this;
+        }
+
+        /// <summary>
+        /// Remove a column that you want to be excluded. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        /// <exception cref="SqlBulkToolsException"></exception>
+        public AllColumnSelect<T> RemoveColumn(Expression<Func<T, object>> columnName)
+        {
+            var propertyName = _helper.GetPropertyName(columnName);
+            if (_columns.Contains(propertyName))
+                _columns.Remove(propertyName);
+
+            else           
+                throw new SqlBulkToolsException("Could not remove the column with name " 
+                    + columnName +  
+                    ". This could be because it's not a value or string type and therefore not included.");
+
             return this;
         }
     }

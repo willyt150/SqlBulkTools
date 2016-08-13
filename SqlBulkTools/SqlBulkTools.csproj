@@ -46,33 +46,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AbstractColumnSelect.cs" />
-    <Compile Include="AbstractOperation.cs" />
+    <Compile Include="BulkOperations\AbstractColumnSelect.cs" />
+    <Compile Include="BulkOperations\AbstractOperation.cs" />
     <Compile Include="DataTableOperations\DataTableAbstractColumnSelect.cs" />
     <Compile Include="DataTableOperations\DataTableOperations.cs" />
     <Compile Include="DataTableOperations\DataTableAllColumnSelect.cs" />
-    <Compile Include="AllColumnSelect.cs" />
-    <Compile Include="BulkDelete.cs" />
-    <Compile Include="BulkInsert.cs" />
-    <Compile Include="BulkInsertOrUpdate.cs" />
-    <Compile Include="BulkOperationsHelper.cs" />
-    <Compile Include="BulkUpdate.cs" />
+    <Compile Include="BulkOperations\AllColumnSelect.cs" />
+    <Compile Include="BulkOperations\BulkDelete.cs" />
+    <Compile Include="BulkOperations\BulkInsert.cs" />
+    <Compile Include="BulkOperations\BulkInsertOrUpdate.cs" />
+    <Compile Include="Helper\BulkOperationsHelper.cs" />
+    <Compile Include="BulkOperations\BulkUpdate.cs" />
     <Compile Include="DataTableOperations\DataTableSingularColumnSelect.cs" />
-    <Compile Include="ColumnSelect.cs" />
-    <Compile Include="Constants.cs" />
+    <Compile Include="BulkOperations\SingularColumnSelect.cs" />
+    <Compile Include="Helper\Constants.cs" />
     <Compile Include="DataTableOperations\DataTableColumns.cs" />
     <Compile Include="DataTableOperations\IDataTableOperations.cs" />
-    <Compile Include="IBulkOperations.cs" />
+    <Compile Include="BulkOperations\IBulkOperations.cs" />
     <Compile Include="DataTableOperations\IDataTableTransaction.cs" />
     <Compile Include="Exception\IdentityException.cs" />
-    <Compile Include="ITransaction.cs" />
+    <Compile Include="BulkOperations\ITransaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="DataTableOperations\SetupDataTable.cs" />
-    <Compile Include="Setup.cs" />
-    <Compile Include="BulkOperations.cs" />
+    <Compile Include="BulkOperations\Setup.cs" />
+    <Compile Include="BulkOperations\BulkOperations.cs" />
     <Compile Include="Exception\SqlBulkToolsException.cs" />
-    <Compile Include="Table.cs" />
-    <Compile Include="CollectionSelect.cs" />
+    <Compile Include="BulkOperations\Table.cs" />
+    <Compile Include="BulkOperations\CollectionSelect.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

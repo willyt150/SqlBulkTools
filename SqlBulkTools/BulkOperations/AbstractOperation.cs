@@ -4,6 +4,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
