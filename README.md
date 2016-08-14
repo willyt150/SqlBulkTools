@@ -66,7 +66,7 @@ var dt = dtOps.SetupDataTable<Book>()
 .AddColumn(x => x.Id)
 .AddColumn(x => x.ISBN)
 .AddColumn(x => x.Description)
-.CustomColumnMapping(x => x.PublishDate, "BookDescription")
+.CustomColumnMapping(x => x.Description, "BookDescription")
 .PrepareDataTable();
 
 /* PrepareDataTable() returns a DataTable. Here you can apply additional configuration. 
