@@ -9,13 +9,13 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public class DataTableOperations
+    public class DataTableOperations : IDataTableOperations
     {
         private HashSet<string> _columns;
         private HashSet<string> _removedColumns; 
         private Dictionary<string, string> _customColumnMappings;
         private IDataTableTransaction _dataTableTransaction;
-        private BulkOperationsHelper _helper;
+        private readonly BulkOperationsHelper _helper;
         private Type _expectedType;
 
 
@@ -38,7 +38,8 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Set up a DataTable. Each transaction requires a valid setup. Examples available at: https://github.com/gtaylor44/SqlBulkTools 
+        /// Entry point for setting up a DataTable. Each transaction requires a valid setup. 
+        /// A valid setup is one that ends with the last call being PrepareDataTable. Examples available at. https://github.com/gtaylor44/SqlBulkTools 
         /// </summary>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
@@ -49,8 +50,7 @@ namespace SqlBulkTools
 
         /// <summary>
         /// Builds a prepared DataTable. PrepareDataTable must be called during Setup for this operation to work. 
-        /// You can add further settings to your 
-        /// DataTable between PrepareDataTable and BuildPreparedDataTable. See documentation for examples. 
+        /// See documentation for examples. https://github.com/gtaylor44/SqlBulkTools 
         /// </summary>
         /// <returns>Populated DataTable</returns>
         public DataTable BuildPreparedDataDable()
@@ -61,10 +61,10 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Returns a column that has been added during SetupDataTable. Any custom column mappings adding during setup are respected. 
-        /// Notes: (1) SetupDataTable must called first. GetColumn will fail without a Setup. 
-        /// (2) Type must be of the same type used during setup. (3) Column must be added using AddColumn or AddAllColumns. 
-        /// Refer to documentation for examples. 
+        /// Returns a column that has been added during SetupDataTable. Any custom column mappings adding during setup are applied. 
+        /// Notes: (1) Setup must use PrepareDataTable before calling this method. GetColumn will fail without a valid Setup. 
+        /// (2) Generics... Type must be of the same type used during setup. 
+        /// Refer to documentation for examples. https://github.com/gtaylor44/SqlBulkTools 
         /// 
         /// </summary>
         /// <returns></returns>

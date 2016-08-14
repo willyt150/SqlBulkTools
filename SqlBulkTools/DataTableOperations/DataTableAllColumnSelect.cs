@@ -37,7 +37,7 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Remove a column that you want to be excluded. 
+        /// Removes a column that you want to be excluded from the data table. 
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>

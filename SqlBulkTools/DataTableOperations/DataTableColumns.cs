@@ -27,9 +27,9 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Add each column that you want to include in the DataTable.
+        /// Add each column that you want to include in the DataTable manually. 
         /// </summary>
-        /// <param name="columnName">Column name as represented in database</param>
+        /// <param name="columnName"></param>
         /// <returns></returns>
         public DataTableSingularColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
@@ -39,7 +39,7 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Adds all properties in model that are either value or string type into the DataTable. 
+        /// Adds all properties in model that are either value, string, char[] or byte[] type. 
         /// </summary>
         /// <returns></returns>
         public DataTableAllColumnSelect<T> AddAllColumns()

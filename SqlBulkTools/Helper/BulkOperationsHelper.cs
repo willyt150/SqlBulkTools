@@ -362,6 +362,14 @@ namespace SqlBulkTools
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="throwIfInvalid">
+        /// Set this to true if user is manually adding columns. If AddAllColumns is used, then this can be omitted. 
+        /// </param>
+        /// <returns></returns>
         private bool CheckForValidDataType(Type type, bool throwIfInvalid = false)
         {
             if (type.IsValueType ||

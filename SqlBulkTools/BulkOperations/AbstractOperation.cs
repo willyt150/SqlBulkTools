@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
@@ -85,6 +86,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <exception cref="SqlBulkToolsException"></exception>
+        
         protected void SetIdentity(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);

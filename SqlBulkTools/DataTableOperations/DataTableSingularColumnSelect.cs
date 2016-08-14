@@ -50,7 +50,8 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// Returns a data table to be used in a stored procedure. 
+        /// Returns a data table to be used in a stored procedure as user-defined table type or temp table.
+        /// Make any neccessary changes before calling BuildPreparedDataTable
         /// </summary>
         /// <returns></returns>
         public DataTable PrepareDataTable()

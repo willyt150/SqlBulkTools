@@ -1,7 +1,7 @@
 <img src="http://gregnz.com/images/SqlBulkTools/icon-large.png" alt="SqlBulkTools"> 
 #SqlBulkTools
 -----------------------------
-Welcome to Version 2! High-performance C# Bulk operations for SQL Server (starting from 2008) and Azure SQL Database. Supports Bulk Insert, Update, Delete & Merge. Uses SQLBulkCopy under the hood. Please leave a Github star if you find this project useful. 
+High-performance C# Bulk operations for SQL Server (starting from 2008) and Azure SQL Database. Includes Data Table helper, Bulk Insert, Update, Delete & Merge. Uses SQLBulkCopy under the hood. Please leave a Github star if you find this project useful. 
 
 ##Examples
 
@@ -10,19 +10,22 @@ Welcome to Version 2! High-performance C# Bulk operations for SQL Server (starti
 ```c#
 using SqlBulkTools;
 
-// IBulkOperations Interface for easy mocking.
-public class BookClub(IBulkOperations bulk) {
+// Mockable IBulkOperations and IDataTableOperations Interface.
+public class BookClub(IBulkOperations bulk, IDataTableOperations dtOps) {
 
-  IBulkOperations _bulk;
+  private IBulkOperations _bulk;
+  private IDataTableOperations _dtOps;
   
   public BookClub(IBulkOperations bulk) {
     _bulk = bulk;
+    _dtOps = dtOps;
   }
     // Do your stuff
 }
 
 // Or simply new up an instance.
-var bulk = new BulkOperations();
+var bulk = new BulkOperations(); // for Bulk Tools. 
+var dtOps = new DataTableOperations() // for Data Table Tools.
 
 // The following examples are based on a cut down Book model
 
@@ -31,14 +34,72 @@ public class Book {
     public string ISBN {get; set;}
     public string Description {get; set;}
 }
+```
+
+##New Features
+
+The latest version of SqlBulkTools includes numerous improvements and new features. 
+
+- "Overcome SqlBulkCopy Limitations". Output column direction for identity columns for all bulk operations. Slight performance hit of ~5% because SqlBulkCopy does not natively
+support this feature. 
+- RemoveColumn method available when using AddAllColumns(). This is useful when you want to include all
+columns but exclude a couple. 
+- Support for all .NET Framework type to SQL Server Data Type Mappings (<Value type>, Char[], String, Byte[], SqlXml).
+- Bug fixes and performance enhancements. 
+- BuildPreparedDataTable() as detailed below...
+
+###BuildPreparedDataDable
+---------------
+Easily create data tables for usage in table types or temp tables and benefit from the following features:
+- Strongly typed column names.
+- Resolve data types automatically. 
+- Populate list. 
+
+Once data table is prepared, any additional configuration can be applied. 
+
+```c#
+DataTableOperations dtOps = new DataTableOperations();
+books = GetBooks();
+
+var dt = dtOps.SetupDataTable<Book>()
+.ForCollection(books)
+.AddColumn(x => x.Id)
+.AddColumn(x => x.ISBN)
+.AddColumn(x => x.Description)
+.CustomColumnMapping(x => x.PublishDate, "BookDescription")
+.PrepareDataTable();
+
+/* PrepareDataTable() returns a DataTable. Here you can apply additional configuration. 
+You can use GetColumn<T> to get the column name to be used in indexer. Any custom column mappings are applied */
+
+dt.Columns[dtOps.GetColumn<Book>(x => x.Id)].AutoIncrement = true;
+dt.Columns[dtOps.GetColumn<Book>(x => x.ISBN)].AllowDBNull = false;
+
+// Additional configuration complete? Cool. Populate the datatable with rows by using BuildPreparedDataTable().
+
+dt = dtOps.BuildPreparedDataTable(); 
+
+// Another example...
+
+// Feeling lazy? Build your data tables using AddAllColumns()
+
+var dt = dtOps.SetupDataTable<Book>()
+.ForCollection(books)
+.AddAllColumns()
+.RemoveColumn(x => x.Description) // Use RemoveColumn if you want to exclude a column. 
+.PrepareDataTable();
+
+dt = dtOps.BuildPreparedDataTable(); 
 
 ```
+
 ###BulkInsert
 ---------------
 ```c#
 books = GetBooks();
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .AddAllColumns()
 .BulkInsert();
@@ -59,9 +120,11 @@ for more info.
 ###BulkInsertOrUpdate (aka Merge)
 ---------------
 ```c#
+var bulk = new BulkOperations();
 books = GetBooks();
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .AddColumn(x => x.ISBN)
 .AddColumn(x => x.Title)
@@ -74,7 +137,8 @@ bulk.CommitTransaction("DefaultConnection");
 
 // Another example using an identity column
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .AddAllColumns()
 .BulkInsertOrUpdate()
@@ -104,9 +168,11 @@ identity column.
 ###BulkUpdate
 ---------------
 ```c#
+var bulk = new BulkOperations();
 books = GetBooksToUpdate();
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .AddColumn(x => x.ISBN)
 .AddColumn(x => x.Title)
@@ -140,9 +206,11 @@ public class BookDto {
     public string ISBN {get; set;}
 }
 
+var bulk = new BulkOperations();
 books = GetBooksIDontLike();
 
-bulk.Setup<BookDto>(x => x.ForCollection(books))
+bulk.Setup<BookDto>()
+.ForCollection(books)
 .WithTable("Books")
 .AddColumn(x => x.ISBN)
 .BulkDelete()
@@ -167,9 +235,11 @@ an InvalidOperationException.
 can use a custom column mapping. For the below example, assume that there is a 'BookTitle' column 
 name in database which is defined in the model as 'Title' */
 
+var bulk = new BulkOperations();
 books = GetBooks();
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .AddAllColumns()
 .CustomColumnMapping(x => x.Title, "BookTitle") 
@@ -182,9 +252,11 @@ bulk.CommitTransaction("DefaultConnection");
 ###Advanced
 ---------------
 ```c#
+var bulk = new BulkOperations();
 books = GetBooks();
 
-bulk.Setup<Book>(x => x.ForCollection(books))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .WithSchema("Api") // Specify a schema 
 .WithBulkCopyBatchSize(4000)
@@ -202,7 +274,8 @@ to their initial state. */
 
 // Example
 
-bulk.Setup<Book>(x => x.ForCollection(col))
+bulk.Setup<Book>()
+.ForCollection(books)
 .WithTable("Books")
 .WithBulkCopyBatchSize(5000)
 .WithSqlBulkCopyOptions(SqlBulkCopyOptions.TableLock)
@@ -227,10 +300,11 @@ bulk.CommitTransaction("DefaultConnection");
 
 #####Setup<T>
 ```c#
-Setup<T>(Func<Setup<T>, CollectionSelect<T>> list)
+Setup<T>()
 
 // Example usage where col implements IEnumerable and is of type Book
-bulk.Setup<Book>(x => x.ForCollection(col)) 
+bulk.Setup<Book>()
+.ForCollection(books)
 
 /* Setup is the main entry point. Because of the vast flexibility possible with SqlBulkTools, 
 a fluent interface helps to guide you through setup process. This design choice was made to 

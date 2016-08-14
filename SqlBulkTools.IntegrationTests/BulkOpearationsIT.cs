@@ -873,6 +873,7 @@ namespace SqlBulkTools.IntegrationTests
         private long BulkInsertOrUpdate(IEnumerable<Book> col)
         {
             BulkOperations bulk = new BulkOperations();
+
             bulk.Setup<Book>()
                 .ForCollection(col)
                 .WithTable("Books")
