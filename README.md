@@ -89,7 +89,7 @@ var dt = dtOps.SetupDataTable<Book>()
 .RemoveColumn(x => x.Description) // Use RemoveColumn if you want to exclude a column. 
 .PrepareDataTable();
 
-dt = dtOps.BuildPreparedDataTable(); 
+dt = dtOps.BuildPreparedDataTable(); // Returns a populated DataTable
 
 ```
 
@@ -105,6 +105,18 @@ bulk.Setup<Book>()
 .BulkInsert();
 
 bulk.CommitTransaction("DefaultConnection");
+
+// Another example with identity output.
+
+bulk.Setup<Book>()
+.ForCollection(books)
+.WithTable("Books")
+.AddAllColumns()
+.BulkInsert()
+.SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+bulk.CommitTransaction("DefaultConnection");
+// The value of the Id property on each record in 'books' will be updated to reflect the value in database.  
 
 /* 
 Notes: 
@@ -135,7 +147,7 @@ bulk.Setup<Book>()
 bulk.CommitTransaction("DefaultConnection");
 
 
-// Another example using an identity column
+// Another example matching an identity column
 
 bulk.Setup<Book>()
 .ForCollection(books)
