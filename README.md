@@ -44,7 +44,7 @@ The latest version of SqlBulkTools includes numerous improvements and new featur
 support this feature. 
 - RemoveColumn method available when using AddAllColumns(). This is useful when you want to include all
 columns but exclude a couple. 
-- Support for all .NET Framework type to SQL Server Data Type Mappings (<Value type>, Char[], String, Byte[], SqlXml).
+- Support for all .NET Framework type to SQL Server Data Type Mappings (Value type, Char[], String, Byte[], SqlXml).
 - Bug fixes and performance enhancements. 
 - BuildPreparedDataTable() as detailed below...
 
