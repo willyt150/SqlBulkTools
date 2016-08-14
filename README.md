@@ -50,7 +50,7 @@ columns but exclude a couple.
 
 ###BuildPreparedDataDable
 ---------------
-Easily create data tables for usage in table types or temp tables and benefit from the following features:
+Easily create data tables for table variables or temp tables and benefit from the following features:
 - Strongly typed column names.
 - Resolve data types automatically. 
 - Populate list. 
