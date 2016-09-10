@@ -57,7 +57,7 @@ namespace SqlBulkTools
                 }
 
             }
-
+            
             StringBuilder command = new StringBuilder();
 
             command.Append("CREATE TABLE #TmpTable(");
