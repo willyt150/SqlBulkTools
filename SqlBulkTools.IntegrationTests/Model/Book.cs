@@ -28,6 +28,8 @@ namespace SqlBulkTools.IntegrationTests.Model
         public decimal? Price { get; set; }
 
         public float? TestFloat { get; set; }
+
+        public object InvalidType { get; set; }
     }
 
 }
