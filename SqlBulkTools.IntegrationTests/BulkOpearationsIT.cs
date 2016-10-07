@@ -690,7 +690,7 @@ namespace SqlBulkTools.IntegrationTests
         }
 
 
-
+       
 
         [Test]
         public void SqlBulkTools_BulkUpdateWithSelectedColumns_TestIdentityOutput()
