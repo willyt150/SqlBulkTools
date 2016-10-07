@@ -129,6 +129,14 @@ namespace SqlBulkTools
             return new Setup<T>(this);
         }
 
+        /// <summary>
+        /// Each transaction requires a valid setup. Examples available at: https://github.com/gtaylor44/SqlBulkTools 
+        /// </summary>
+        /// <returns></returns>
+        public Setup Setup()
+        {
+            return new Setup(this);
+        }
 
     }
 

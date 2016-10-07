@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Xml;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
 using SqlBulkTools.IntegrationTests.Data;
@@ -219,12 +220,13 @@ namespace SqlBulkTools.IntegrationTests
             BulkDelete(_db.Books.ToList());
 
             _bookCollection = _randomizer.GetRandomCollection(rows);
-            bulk.Setup<Book>()
-                .ForCollection(_bookCollection)
+            bulk.Setup() //<Book>()
+                .ForCollection(_bookCollection.Select(x => new {ColumnName1 = x.Description, ColumnName2 = x.ISBN}))
                 .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert()
-                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                .AddColumn(x => x.ColumnName1)
+                .AddColumn(x => x.ColumnName2)
+                .BulkInsert();
+                //.SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
 
             bulk.CommitTransaction("SqlBulkToolsTest");
 
