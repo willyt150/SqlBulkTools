@@ -6,6 +6,33 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
+    public class Setup
+    {
+        private readonly BulkOperations _ext;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="ext"></param>
+        public Setup(BulkOperations ext)
+        {
+            _ext = ext;
+        }
+
+        /// <summary>
+        /// Represents the collection of objects to be inserted/upserted/updated/deleted (configured in next steps). 
+        /// </summary>
+        /// <param name="list"></param>
+        /// <returns></returns>
+        public CollectionSelect<T> ForCollection<T>(IEnumerable<T> list)
+        {
+            return new CollectionSelect<T>(list, _ext);
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
     /// <typeparam name="T"></typeparam>
     public class Setup<T>
     {
