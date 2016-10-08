@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.Entity;
+using System.Data.Entity.Migrations.Model;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
 using SqlBulkTools.IntegrationTests.Data;
@@ -218,7 +221,9 @@ namespace SqlBulkTools.IntegrationTests
 
             BulkDelete(_db.Books.ToList());
 
+         
             _bookCollection = _randomizer.GetRandomCollection(rows);
+
             bulk.Setup<Book>()
                 .ForCollection(_bookCollection)
                 .WithTable("Books")
@@ -612,7 +617,6 @@ namespace SqlBulkTools.IntegrationTests
             var expected = books.Single(x => x.ISBN == test.ISBN);
 
             Assert.AreEqual(expected.Id, test.Id);
-
         }
 
 
@@ -740,6 +744,32 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
+        public void SqlBulkTools_BulkInsertWithGenericType()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            _bookCollection = _randomizer.GetRandomCollection(30);
+
+            bulk.Setup()
+            .ForCollection(
+                _bookCollection.Select(
+                    x => new { x.Description, x.ISBN, x.Id, x.Price }))
+            .WithTable("Books")
+            .AddColumn(x => x.Id)
+            .AddColumn(x => x.Description)
+            .AddColumn(x => x.ISBN)
+            .AddColumn(x => x.Price)
+            .BulkInsert()
+            .SetIdentityColumn(x => x.Id);
+
+            bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.IsTrue(_db.Books.Any());
+        }
+
+        [Test]
         public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
         {
             _db.Books.RemoveRange(_db.Books.ToList());
@@ -828,6 +858,97 @@ namespace SqlBulkTools.IntegrationTests
                 }
             }
 
+
+        }
+
+        [Test, Ignore("You probably don't have this table or sproc. Anyway, this table contained around 35 million records. Bulk update took around 500ms for 853 records")]
+        public async Task AdventureWorksTest()
+        {
+
+            List <Transaction> transactions = new List<Transaction>();
+            using (var sqlConnection = new SqlConnection(ConfigurationManager.ConnectionStrings["AdventureWorks2014"].ConnectionString))
+            using (
+                var cmd =
+                    new SqlCommand("GetTransactions", sqlConnection))
+            {
+                sqlConnection.Open();
+                cmd.CommandType = CommandType.StoredProcedure;
+                var reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    Transaction trans = new Transaction()
+                    {
+                        ActualCost = (decimal)reader["ActualCost"],
+                        ProductId = (int)reader["ProductID"],
+                        TransactionId = (int)reader["TransactionID"],
+                        TransactionDate = (DateTime)reader["TransactionDate"],
+                        Quantity = (int)reader["Quantity"]
+                    };
+
+                    transactions.Add(trans);
+                }
+
+            }
+
+            transactions.ForEach(x =>
+            {
+                x.ActualCost += (decimal) 0.43;
+                x.Quantity += 32;
+                x.TransactionDate = DateTime.UtcNow;
+            } );
+
+            IBulkOperations bulkOperations = new BulkOperations();
+            IBulkOperations bulkOperations2 = new BulkOperations();
+
+            bulkOperations.Setup<Transaction>()
+                .ForCollection(transactions)                
+                .WithTable("bigTransactionHistory")
+                .AddColumn(x => x.TransactionId)
+                .AddColumn(x => x.ActualCost)
+                .AddColumn(x => x.ProductId)
+                .AddColumn(x => x.Quantity)
+                .AddColumn(x => x.TransactionDate)
+                 .CustomColumnMapping(x => x.TransactionId, "TransactionID")
+                .CustomColumnMapping(x => x.ProductId, "ProductID")
+                .BulkUpdate()
+                
+
+                .MatchTargetOn(x => x.TransactionId);
+
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+
+
+            var cTask = bulkOperations.CommitTransactionAsync("AdventureWorks2014");
+
+            transactions.ForEach(x =>
+            {
+                x.ActualCost += (decimal)0.43;
+                x.Quantity += 32 * 2;
+                x.TransactionDate = DateTime.UtcNow;
+            });
+
+            bulkOperations2.Setup<Transaction>()
+                .ForCollection(transactions)
+                .WithTable("bigTransactionHistory")
+                .AddAllColumns()
+                .CustomColumnMapping(x => x.TransactionId, "TransactionID")
+                .CustomColumnMapping(x => x.ProductId, "ProductID")
+                .BulkUpdate()
+                .MatchTargetOn(x => x.TransactionId);
+
+            
+            var lTask = bulkOperations2.CommitTransactionAsync("AdventureWorks2014");
+
+            await cTask;
+            await lTask;
+
+            watch.Stop();
+
+            // Add breakpoint here
+            var elapsedMs = watch.ElapsedMilliseconds;
+
+            Assert.IsTrue(transactions.Any());
+            
 
         }
 

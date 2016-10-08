@@ -362,6 +362,7 @@ namespace SqlBulkTools
 
         }
 
+
         /// <summary>
         /// 
         /// </summary>
@@ -714,7 +715,13 @@ namespace SqlBulkTools
 
                         if (outputIdentityDic.TryGetValue((int) reader[0], out item))
                         {
-                            item.GetType().GetProperty(identityColumn).SetValue(item, reader[1], null);
+                            PropertyInfo p = item.GetType().GetProperty(identityColumn);
+
+                            if (p.CanWrite)
+                               p.SetValue(item, reader[1], null);
+                            
+                            else
+                                throw new SqlBulkToolsException($"No setter method available on property '{identityColumn}'. Could not write output back to property.");
                         }
 
                     }
@@ -735,7 +742,14 @@ namespace SqlBulkTools
 
                     while (reader.Read())
                     {
-                        items[counter].GetType().GetProperty(identityColumn).SetValue(items[counter], reader[0], null);
+                        PropertyInfo p = items[counter].GetType().GetProperty(identityColumn);
+
+                        if (p.CanWrite)
+                            p.SetValue(items[counter], reader[0], null);
+
+                        else
+                            throw new SqlBulkToolsException($"No setter method available on property '{identityColumn}'. Could not write output back to property.");
+
                         counter++;
                     }
                 }
@@ -785,6 +799,7 @@ namespace SqlBulkTools
                     while (reader.Read())
                     {
                         items[counter].GetType().GetProperty(identityColumn).SetValue(items[counter], reader[0], null);
+
                         counter++;
                     }
                 }
