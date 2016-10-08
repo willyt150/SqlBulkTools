@@ -770,6 +770,64 @@ namespace SqlBulkTools.IntegrationTests
         }
 
         [Test]
+        public void SqlBulkTools_BulkInsertWithoutSetter_ThrowsMeaningfulException()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            _bookCollection = _randomizer.GetRandomCollection(30);
+
+            bulk.Setup()
+            .ForCollection(
+                _bookCollection.Select(
+                    x => new { x.Description, x.ISBN, x.Id, x.Price }))
+            .WithTable("Books")
+            .AddColumn(x => x.Id)
+            .AddColumn(x => x.Description)
+            .AddColumn(x => x.ISBN)
+            .AddColumn(x => x.Price)
+            .BulkInsert()
+            .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"), 
+                "No setter method available on property 'Id'. Could not write output back to property.");
+        }
+
+        [Test]
+        public void SqlBulkTools_BulkInsertOrUpdateWithPrivateIdentityField_ThrowsMeaningfulException()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(30);
+            List<BookWithPrivateIdentity> booksWithPrivateIdentity = new List<BookWithPrivateIdentity>();
+
+            books.ForEach(x => booksWithPrivateIdentity.Add(new BookWithPrivateIdentity()
+            {
+                ISBN = x.ISBN,
+                Description = x.Description,
+                Price = x.Price
+                
+            }));
+
+            bulk.Setup<BookWithPrivateIdentity>()
+            .ForCollection(booksWithPrivateIdentity)
+            .WithTable("Books")
+            .AddColumn(x => x.Id)
+            .AddColumn(x => x.Description)
+            .AddColumn(x => x.ISBN)
+            .AddColumn(x => x.Price)
+            .BulkInsertOrUpdate()
+            .MatchTargetOn(x => x.ISBN)
+            .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"), 
+                "No setter method available on property 'Id'. Could not write output back to property.");
+        }
+
+        [Test]
         public void SqlBulkTools_BulkInsertOrUpdae_TestDataTypes()
         {
             _db.Books.RemoveRange(_db.Books.ToList());

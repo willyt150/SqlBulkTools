@@ -70,6 +70,7 @@
     <Compile Include="Helper\FileHelper.cs" />
     <Compile Include="Data\DatabaseInitialiser.cs" />
     <Compile Include="Migrations\Configuration.cs" />
+    <Compile Include="Model\BookWithPrivateIdentity.cs" />
     <Compile Include="Model\CustomColumnMappingTest.cs" />
     <Compile Include="Model\ReservedColumnNameTest.cs" />
     <Compile Include="Model\TestDataTypes.cs" />

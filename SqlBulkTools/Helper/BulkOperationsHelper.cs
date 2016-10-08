@@ -721,7 +721,7 @@ namespace SqlBulkTools
                                p.SetValue(item, reader[1], null);
                             
                             else
-                                throw new SqlBulkToolsException($"No setter method available on property '{identityColumn}'. Could not write output back to property.");
+                                throw new SqlBulkToolsException(GetPrivateSetterExceptionMessage(identityColumn));
                         }
 
                     }
@@ -748,7 +748,7 @@ namespace SqlBulkTools
                             p.SetValue(items[counter], reader[0], null);
 
                         else
-                            throw new SqlBulkToolsException($"No setter method available on property '{identityColumn}'. Could not write output back to property.");
+                            throw new SqlBulkToolsException(GetPrivateSetterExceptionMessage(identityColumn));
 
                         counter++;
                     }
@@ -777,7 +777,13 @@ namespace SqlBulkTools
 
                         if (outputIdentityDic.TryGetValue((int)reader[0], out item))
                         {
-                            item.GetType().GetProperty(identityColumn).SetValue(item, reader[1], null);
+                            PropertyInfo p = item.GetType().GetProperty(identityColumn);
+
+                            if (p.CanWrite)
+                                p.SetValue(item, reader[1], null);
+
+                            else
+                                throw new SqlBulkToolsException(GetPrivateSetterExceptionMessage(identityColumn));
                         }
 
                     }
@@ -798,7 +804,13 @@ namespace SqlBulkTools
 
                     while (reader.Read())
                     {
-                        items[counter].GetType().GetProperty(identityColumn).SetValue(items[counter], reader[0], null);
+                        PropertyInfo p = items[counter].GetType().GetProperty(identityColumn);
+
+                        if (p.CanWrite)
+                            p.SetValue(items[counter], reader[0], null);
+
+                        else
+                            throw new SqlBulkToolsException(GetPrivateSetterExceptionMessage(identityColumn));
 
                         counter++;
                     }
@@ -807,6 +819,11 @@ namespace SqlBulkTools
                 command.CommandText = GetDropTmpTableCmd();
                 await command.ExecuteNonQueryAsync();
             }
+        }
+
+        private string GetPrivateSetterExceptionMessage(string columnName)
+        {
+            return $"No setter method available on property '{columnName}'. Could not write output back to property.";
         }
 
         internal string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName, 
