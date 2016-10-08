@@ -73,6 +73,7 @@
     <Compile Include="Model\CustomColumnMappingTest.cs" />
     <Compile Include="Model\ReservedColumnNameTest.cs" />
     <Compile Include="Model\TestDataTypes.cs" />
+    <Compile Include="Model\Transaction.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="BulkOpearationsIT.cs" />
     <Compile Include="Model\Book.cs" />
@@ -90,10 +91,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config">
-      <SubType>Designer</SubType>
-    </None>
-    <None Include="connectionString.config">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <SubType>Designer</SubType>
     </None>
     <None Include="packages.config" />
