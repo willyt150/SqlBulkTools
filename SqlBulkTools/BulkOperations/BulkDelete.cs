@@ -15,7 +15,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkDelete<T> : AbstractOperation<T>, ITransaction
     {
-
         /// <summary>
         /// 
         /// </summary>
@@ -33,12 +32,13 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="disableIndexList"></param>
+        /// <param name="bulkCopyDelegates"></param>
         public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
-            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
 
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
-                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
         }
@@ -118,7 +118,7 @@ namespace SqlBulkTools
                         command.ExecuteNonQuery();
 
                         _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming,
-                            _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                            _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -208,7 +208,7 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         await command.ExecuteNonQueryAsync();
 
-                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {

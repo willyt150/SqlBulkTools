@@ -32,13 +32,14 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
+        /// <param name="bulkCopyDelegates"></param>
         public BulkInsert(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
             HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
-            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) : 
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) : 
 
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
-                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
         }
@@ -102,7 +103,7 @@ namespace SqlBulkTools
                             _helper.MapColumns(bulkcopy, _columns, _customColumnMappings);
 
                             _helper.SetSqlBulkCopySettings(bulkcopy, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                                _bulkCopyNotifyAfter, _bulkCopyTimeout);
+                                _bulkCopyNotifyAfter, _bulkCopyTimeout, _bulkCopyDelegates);
 
                             SqlCommand command = conn.CreateCommand();
                             command.Connection = conn;
@@ -122,7 +123,7 @@ namespace SqlBulkTools
                                 command.ExecuteNonQuery();
 
                                 _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                                    _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                                    _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                                 command.CommandText = _helper.GetInsertIntoStagingTableCmd(command, conn, _schema, _tableName,
                                     _columns, _identityColumn, _outputIdentity);
@@ -203,7 +204,7 @@ namespace SqlBulkTools
                             _helper.MapColumns(bulkcopy, _columns, _customColumnMappings);
 
                             _helper.SetSqlBulkCopySettings(bulkcopy, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                                _bulkCopyNotifyAfter, _bulkCopyTimeout);
+                                _bulkCopyNotifyAfter, _bulkCopyTimeout, _bulkCopyDelegates);
 
                             SqlCommand command = conn.CreateCommand();
 
@@ -224,7 +225,7 @@ namespace SqlBulkTools
                                 await command.ExecuteNonQueryAsync();
 
                                 _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                                    _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                                    _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                                 command.CommandText = _helper.GetInsertIntoStagingTableCmd(command, conn, _schema, _tableName,
                                     _columns, _identityColumn, _outputIdentity);

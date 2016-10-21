@@ -15,7 +15,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkUpdate<T> : AbstractOperation<T>, ITransaction
     {
-        
         /// <summary>
         /// Updates existing records in bulk. 
         /// </summary>
@@ -33,12 +32,13 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="disableIndexList"></param>
+        /// <param name="bulkCopyDelegates"></param>
         public BulkUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter,
-            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
             
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
-                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
+                bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
         }
@@ -123,7 +123,7 @@ namespace SqlBulkTools
 
                         //Bulk insert into temp table
                         _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
                     
                         // Updating destination table, and dropping temp table
                         if (_disableIndexList != null && _disableIndexList.Any())
@@ -227,7 +227,7 @@ namespace SqlBulkTools
 
                         //Bulk insert into temp table
                         await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);                                           
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);                                           
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {

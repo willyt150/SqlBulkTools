@@ -513,8 +513,9 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="bulkCopyNotifyAfter"></param>
         /// <param name="bulkCopyTimeout"></param>
+        /// <param name="bulkCopyDelegates"></param>
         internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, 
-            int? bulkCopyNotifyAfter, int bulkCopyTimeout)
+            int? bulkCopyNotifyAfter, int bulkCopyTimeout, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             bulkcopy.EnableStreaming = bulkCopyEnableStreaming;
 
@@ -526,6 +527,7 @@ namespace SqlBulkTools
             if (bulkCopyNotifyAfter.HasValue)
             {
                 bulkcopy.NotifyAfter = bulkCopyNotifyAfter.Value;
+                bulkCopyDelegates?.ToList().ForEach(x => bulkcopy.SqlRowsCopied += x);
             }
 
             bulkcopy.BulkCopyTimeout = bulkCopyTimeout;
@@ -668,7 +670,7 @@ namespace SqlBulkTools
         }
 
         internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming, 
-            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
+            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
@@ -676,14 +678,14 @@ namespace SqlBulkTools
 
                 SetSqlBulkCopySettings(bulkcopy, bulkCopyEnableStreaming,
                     bulkCopyBatchSize,
-                    bulkCopyNotifyAfter, bulkCopyTimeout);
+                    bulkCopyNotifyAfter, bulkCopyTimeout, bulkCopyDelegates);
 
                 bulkcopy.WriteToServer(dt);
             }
         }
 
         internal async Task InsertToTmpTableAsync(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
-            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions)
+            int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
             {
@@ -691,7 +693,7 @@ namespace SqlBulkTools
 
                 SetSqlBulkCopySettings(bulkcopy, bulkCopyEnableStreaming,
                     bulkCopyBatchSize,
-                    bulkCopyNotifyAfter, bulkCopyTimeout);
+                    bulkCopyNotifyAfter, bulkCopyTimeout, bulkCopyDelegates);
 
                 await bulkcopy.WriteToServerAsync(dt);
             }

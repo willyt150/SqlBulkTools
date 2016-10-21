@@ -15,7 +15,7 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class BulkInsertOrUpdate<T> : AbstractOperation<T>, ITransaction
     {      
-        private bool _deleteWhenNotMatchedFlag;       
+        private bool _deleteWhenNotMatchedFlag;
 
         /// <summary>
         /// 
@@ -34,12 +34,13 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
+        /// <param name="bulkCopyDelegates"></param>
         public BulkInsertOrUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes, 
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming,
-            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext) :
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
             
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
-            bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext)
+            bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
             _deleteWhenNotMatchedFlag = false;
@@ -137,7 +138,7 @@ namespace SqlBulkTools
                         command.ExecuteNonQuery();
 
                         _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -243,7 +244,7 @@ namespace SqlBulkTools
                         await command.ExecuteNonQueryAsync();
 
                         await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions);
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {

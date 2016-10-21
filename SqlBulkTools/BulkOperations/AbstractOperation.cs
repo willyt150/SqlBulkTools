@@ -34,6 +34,7 @@ namespace SqlBulkTools
         protected IEnumerable<T> _list;
         protected List<string> _matchTargetOn;
         protected SqlBulkCopyOptions _sqlBulkCopyOptions;
+        protected IEnumerable<SqlRowsCopiedEventHandler> _bulkCopyDelegates;
         #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member
 
         /// <summary>
@@ -53,11 +54,12 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
+        /// <param name="bulkCopyDelegates"></param>
         protected AbstractOperation(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns,
             HashSet<string> disableIndexList, bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
             bool bulkCopyEnableStreaming,
-            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext)
+            int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             _list = list;
             _tableName = tableName;
@@ -78,7 +80,7 @@ namespace SqlBulkTools
             _outputIdentityDic = new Dictionary<int, T>();
             _outputIdentity = ColumnDirection.Input;
             _matchTargetOn = new List<string>();
-
+            _bulkCopyDelegates = bulkCopyDelegates;
         }
 
         /// <summary>

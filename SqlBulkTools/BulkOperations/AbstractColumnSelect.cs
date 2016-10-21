@@ -31,7 +31,8 @@ namespace SqlBulkTools
         protected bool _disableAllIndexes;
         protected HashSet<string> _disableIndexList;
         protected SqlBulkCopyOptions _sqlBulkCopyOptions;
-        #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member   
+        protected IEnumerable<SqlRowsCopiedEventHandler> _bulkCopyDelegates;
+#pragma warning restore CS1591 // Missing XML comment for publicly visible type or member   
 
         /// <summary>
         /// 
@@ -47,9 +48,10 @@ namespace SqlBulkTools
         /// <param name="bulkCopyBatchSize"></param>
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
+        /// <param name="bulkCopyDelegates"></param>
         protected AbstractColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
-            BulkOperations ext)
+            BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             _helper = new BulkOperationsHelper();
             _disableAllIndexes = false;
@@ -66,6 +68,7 @@ namespace SqlBulkTools
             _bulkCopyBatchSize = bulkCopyBatchSize;
             _sqlBulkCopyOptions = sqlBulkCopyOptions;
             _ext = ext;
+            _bulkCopyDelegates = bulkCopyDelegates;
         }
 
         /// <summary>
@@ -77,7 +80,7 @@ namespace SqlBulkTools
         {
             return new BulkInsert<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes,
                 _customColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
-                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
         /// <summary>
@@ -91,7 +94,7 @@ namespace SqlBulkTools
         {
             return new BulkInsertOrUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes,
                 _customColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
-                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
         /// <summary>
@@ -103,7 +106,7 @@ namespace SqlBulkTools
         {
             return new BulkUpdate<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes,
                 _customColumnMappings, _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter,
-                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
         /// <summary>
@@ -114,7 +117,7 @@ namespace SqlBulkTools
         public BulkDelete<T> BulkDelete()
         {
             return new BulkDelete<T>(_list, _tableName, _schema, _columns, _disableIndexList, _disableAllIndexes, _customColumnMappings,
-                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
     }
 }

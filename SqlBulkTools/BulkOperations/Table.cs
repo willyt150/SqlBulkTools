@@ -27,6 +27,7 @@ namespace SqlBulkTools
         private int? _bulkCopyNotifyAfter;
         private int? _bulkCopyBatchSize;
         private SqlBulkCopyOptions _sqlBulkCopyOptions;
+        private IEnumerable<SqlRowsCopiedEventHandler> _bulkCopyDelegates;
 
         /// <summary>
         /// 
@@ -63,7 +64,7 @@ namespace SqlBulkTools
             var propertyName = _helper.GetPropertyName(columnName);
             Columns.Add(propertyName);
             return new SingularColumnSelect<T>(_list, _tableName, Columns, _schema, 
-                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
         /// <summary>
@@ -74,7 +75,7 @@ namespace SqlBulkTools
         {
             Columns = _helper.GetAllValueTypeAndStringColumns(typeof(T));
             return new AllColumnSelect<T>(_list, _tableName, Columns, _schema, 
-                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext);
+                _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
         /// <summary>
@@ -126,10 +127,12 @@ namespace SqlBulkTools
         /// Triggers an event after x rows inserted. See docs for more info. 
         /// </summary>
         /// <param name="rows"></param>
+        /// <param name="bulkCopyDelegates"></param>
         /// <returns></returns>
-        public Table<T> WithBulkCopyNotifyAfter(int rows)
+        public Table<T> WithBulkCopyNotifyAfter(int rows, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             _bulkCopyNotifyAfter = rows;
+            _bulkCopyDelegates = bulkCopyDelegates;
             return this;
         }
 
