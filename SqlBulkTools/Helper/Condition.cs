@@ -15,6 +15,8 @@ namespace SqlBulkTools
         public string Value { get; set; }
         public Type ValueType { get; set; }
         public ExpressionType Expression { get; set; }
+        public int SortOrder { get; set; }
+        public PredicateType PredicateType { get; set; }
     }
 #pragma warning restore 1591
 }

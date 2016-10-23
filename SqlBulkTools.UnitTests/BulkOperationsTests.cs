@@ -65,7 +65,7 @@ namespace SqlBulkTools.UnitTests
             // Arrange
             var updateOrInsertColumns = GetTestColumns();
             var expected =
-                "UPDATE SET [Target].[id] = [Source].[id], [Target].[Name] = [Source].[Name], [Target].[Town] = [Source].[Town], [Target].[Email] = [Source].[Email], [Target].[IsCool] = [Source].[IsCool] ";
+                "SET [Target].[id] = [Source].[id], [Target].[Name] = [Source].[Name], [Target].[Town] = [Source].[Town], [Target].[Email] = [Source].[Email], [Target].[IsCool] = [Source].[IsCool] ";
             var sut = new BulkOperationsHelper();
 
             // Act
@@ -84,7 +84,7 @@ namespace SqlBulkTools.UnitTests
             updateOrInsertColumns.Add("Id");
 
             var expected =
-                "UPDATE SET [Target].[Id] = [Source].[Id] ";
+                "SET [Target].[Id] = [Source].[Id] ";
             var sut = new BulkOperationsHelper();
 
             // Act
@@ -276,7 +276,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanDecimalCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThanDecimalCondition()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -303,7 +303,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNullCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_IsNullCondition()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -329,7 +329,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNotNullCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_IsNotNullCondition()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -355,7 +355,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThan()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThan()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -381,7 +381,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanOrEqualTo()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThanOrEqualTo()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -407,7 +407,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThan()
+        public void BulkOperationsHelper_BuildPredicateQuery_GreaterThan()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -433,7 +433,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThanOrEqualTo()
+        public void BulkOperationsHelper_BuildPredicateQuery_GreaterThanOrEqualTo()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -459,7 +459,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_CustomColumnMapping()
+        public void BulkOperationsHelper_BuildPredicateQuery_CustomColumnMapping()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -486,7 +486,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_MultipleConditions()
+        public void BulkOperationsHelper_BuildPredicateQuery_MultipleConditions()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -519,7 +519,7 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_ThrowsWhenUpdateOnColIsEmpty()
+        public void BulkOperationsHelper_BuildPredicateQuery_ThrowsWhenUpdateOnColIsEmpty()
         {
             // Arrange
             var helper = new BulkOperationsHelper();
@@ -545,6 +545,30 @@ namespace SqlBulkTools.UnitTests
 
             Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(updateOn1, conditions, targetAlias));
             Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(null, conditions, targetAlias));
+        }
+
+        [Test]
+        public void BulkOperationsHelper_AddSqlParamsForUpdateQuery_GetsTypeAndValue()
+        {
+            var helper = new BulkOperationsHelper();
+
+            Book book = new Book()
+            {
+                ISBN = "Some ISBN",
+                Price = 23.99M,
+                BestSeller = true
+            };
+
+            HashSet<string> columns = new HashSet<string>();
+            columns.Add("ISBN");
+            columns.Add("Price");
+            columns.Add("BestSeller");
+
+            List<SqlParameter> sqlParams = new List<SqlParameter>();
+
+            helper.AddSqlParamsForUpdateQuery(sqlParams, columns, book);
+
+            Assert.AreEqual(3, sqlParams.Count);
         }
 
         private HashSet<string> GetTestColumns()

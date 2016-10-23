@@ -177,13 +177,61 @@ namespace SqlBulkTools
                 throw new SqlBulkToolsException("MatchTargetOn is required for AndQuery.");
 
             StringBuilder command = new StringBuilder();
-           
+
             foreach (var condition in conditions)
             {
                 string targetColumn = condition.CustomColumnMapping ?? condition.LeftName;
 
                 command.Append("AND [" + targetAlias + "].[" + targetColumn + "] " +
                                GetOperator(condition) + " " + (condition.Value != "NULL" ? ("@" + condition.LeftName) : "NULL") + " ");
+            }
+
+            return command.ToString();
+
+        }
+
+        // Used for UpdateQuery and DeleteQuery where, and, or conditions. 
+        internal string BuildPredicateQuery(IEnumerable<Condition> conditions)
+        {
+            if (conditions == null)
+                return null;
+
+            conditions = conditions.OrderBy(x => x.SortOrder);
+
+            StringBuilder command = new StringBuilder();
+
+            foreach (var condition in conditions)
+            {
+                string targetColumn = condition.CustomColumnMapping ?? condition.LeftName;
+
+                switch (condition.PredicateType)
+                {
+                    case PredicateType.Where:
+                    {
+                        command.Append(" WHERE ");
+                        break;
+                    }
+
+                    case PredicateType.And:
+                    {
+                            command.Append(" AND ");
+                            break;
+                    }
+
+                    case PredicateType.Or:
+                        {
+                            command.Append(" OR ");
+                            break;
+                        }
+
+                    default:
+                    {
+                        throw new KeyNotFoundException("Predicate not found");
+                    }
+                }
+
+                command.Append("[" + targetColumn + "] " +
+                               GetOperator(condition) + " " + (condition.Value != "NULL" ? ("@" + condition.LeftName + Constants.UniqueParamIdentifier + condition.SortOrder) : "NULL"));
             }
 
             return command.ToString();
@@ -241,7 +289,7 @@ namespace SqlBulkTools
             StringBuilder command = new StringBuilder();
             List<string> paramsSeparated = new List<string>();
 
-            command.Append("UPDATE SET ");
+            command.Append("SET ");
 
             foreach (var column in columns.ToList())
             {
@@ -254,6 +302,29 @@ namespace SqlBulkTools
             }
 
             command.Append(string.Join(", ", paramsSeparated) + " ");
+
+            return command.ToString();
+        }
+
+        /// <summary>
+        /// Specificially for UpdateQuery and DeleteQuery
+        /// </summary>
+        /// <param name="columns"></param>
+        /// <param name="fullQualifiedTableName"></param>
+        /// <returns></returns>
+        internal string BuildUpdateSet(HashSet<string> columns, string fullQualifiedTableName)
+        {
+            StringBuilder command = new StringBuilder();
+            List<string> paramsSeparated = new List<string>();
+
+            command.Append("SET ");
+
+            foreach (var column in columns.ToList())
+            {
+                paramsSeparated.Add(fullQualifiedTableName + "." + "[" + column + "]" + " = @" + column);
+            }
+
+            command.Append(string.Join(", ", paramsSeparated));
 
             return command.ToString();
         }
@@ -431,6 +502,26 @@ namespace SqlBulkTools
 
         }
 
+        // Loops through object properties, checks if column has been added, adds as sql parameter. Used for the UpdateQuery method. 
+        public void AddSqlParamsForUpdateQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item)
+        {
+            PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+            foreach (var column in columns.ToList())
+            {
+                for (int i = 0; i < props.Length; i++)
+                {
+                    if (props[i].Name == column && item != null && CheckForValidDataType(props[i].PropertyType, throwIfInvalid: true))
+                    {
+                        DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(props[i].PropertyType);
+                        SqlParameter param = new SqlParameter($"@{column}", sqlType);
+                        param.Value = props[i].GetValue(item, null);
+
+                        sqlParameters.Add(param);
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// 
@@ -585,7 +676,7 @@ namespace SqlBulkTools
                     condition.CustomColumnMapping = columnName;
                 }
             }
-        }  
+        }
 
         /// <summary>
         /// Advanced Settings for SQLBulkCopy class. 
@@ -929,6 +1020,224 @@ namespace SqlBulkTools
 
             return comm;
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <param name="predicateType"></param>
+        /// <param name="predicateList"></param>
+        /// <param name="sqlParamsList"></param>
+        /// <param name="sortOrder"></param>
+        /// <param name="appendParam"></param>
+        internal void AddPredicate<T>(Expression<Func<T, bool>> predicate, PredicateType predicateType, List<Condition> predicateList, 
+            List<SqlParameter> sqlParamsList, int sortOrder, string appendParam = null)
+        {
+            string leftName;
+            string value;
+            Condition condition;
+
+            BinaryExpression binaryBody = predicate.Body as BinaryExpression;
+
+            if (binaryBody == null && (predicate.Body.Type == typeof(bool) || predicate.Body.Type == typeof(bool?)))
+            {
+                throw new SqlBulkToolsException($"Expression not supported for {GetPredicateMethodName(predicateType)}. For " +
+                                                $"comparing boolean values, use the fully qualified syntax e.g. 'condition == true'");
+            }
+
+            if (binaryBody == null)
+                throw new SqlBulkToolsException($"Expression not supported for {GetPredicateMethodName(predicateType)}.");
+
+            // For expression types Equal and NotEqual, it's possible for user to pass null value. This handles the null use case. 
+            // SqlParameter is not added when comparison to null value is used. 
+            switch (predicate.Body.NodeType)
+            {
+                case ExpressionType.NotEqual:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+
+
+                        if (value != null)
+                        {
+                            condition = new Condition()
+                            {
+                                Expression = ExpressionType.NotEqual,
+                                LeftName = leftName,
+                                ValueType = binaryBody.Right.Type,
+                                Value = value,
+                                PredicateType = predicateType,
+                                SortOrder = sortOrder
+                            };
+
+                            DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(condition.ValueType);
+
+                            string paramName = appendParam != null ? leftName + appendParam + sortOrder : leftName;
+                            SqlParameter param = new SqlParameter($"@{paramName}", sqlType);
+                            param.Value = condition.Value;
+                            sqlParamsList.Add(param);
+                        }
+                        else
+                        {
+                            condition = new Condition()
+                            {
+                                Expression = ExpressionType.NotEqual,
+                                LeftName = leftName,
+                                Value = "NULL",
+                                PredicateType = predicateType,
+                                SortOrder = sortOrder
+                            };
+                        }
+
+                        predicateList.Add(condition);
+
+
+                        break;
+                    }
+
+                // For expression types Equal and NotEqual, it's possible for user to pass null value. This handles the null use case. 
+                // SqlParameter is not added when comparison to null value is used. 
+                case ExpressionType.Equal:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+
+                        if (value != null)
+                        {
+                            condition = new Condition()
+                            {
+                                Expression = ExpressionType.Equal,
+                                LeftName = leftName,
+                                ValueType = binaryBody.Right.Type,
+                                Value = value, 
+                                PredicateType = predicateType,
+                                SortOrder = sortOrder
+                            };
+
+                            DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(condition.ValueType);
+                            string paramName = appendParam != null ? leftName + appendParam + sortOrder : leftName;
+                            SqlParameter param = new SqlParameter($"@{paramName}", sqlType);
+                            param.Value = condition.Value;
+                            sqlParamsList.Add(param);
+                        }
+                        else
+                        {
+                            condition = new Condition()
+                            {
+                                Expression = ExpressionType.Equal,
+                                LeftName = leftName,
+                                Value = "NULL", 
+                                PredicateType = predicateType,
+                                SortOrder = sortOrder
+                            };
+                        }
+
+                            predicateList.Add(condition);
+
+                        break;
+                    }
+                case ExpressionType.LessThan:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+                        BuildCondition(leftName, value, binaryBody.Right.Type, ExpressionType.LessThan, predicateList, sqlParamsList, 
+                            predicateType, sortOrder, appendParam);
+                        break;
+                    }
+                case ExpressionType.LessThanOrEqual:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+                        BuildCondition(leftName, value, binaryBody.Right.Type, ExpressionType.LessThanOrEqual, predicateList, 
+                            sqlParamsList, predicateType, sortOrder, appendParam);
+                        break;
+                    }
+                case ExpressionType.GreaterThan:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+                        BuildCondition(leftName, value, binaryBody.Right.Type, ExpressionType.GreaterThan, predicateList, 
+                            sqlParamsList, predicateType, sortOrder, appendParam);
+                        break;
+                    }
+                case ExpressionType.GreaterThanOrEqual:
+                    {
+                        leftName = ((MemberExpression)binaryBody.Left).Member.Name;
+                        value = Expression.Lambda(binaryBody.Right).Compile().DynamicInvoke()?.ToString();
+                        BuildCondition(leftName, value, binaryBody.Right.Type, ExpressionType.GreaterThanOrEqual, predicateList, 
+                            sqlParamsList, predicateType, sortOrder, appendParam);
+                        break;
+                    }
+                case ExpressionType.AndAlso:
+                    {
+                        throw new SqlBulkToolsException($"And && expression not supported for {GetPredicateMethodName(predicateType)}. " +
+                                                        $"Try chaining predicates instead e.g. {GetPredicateMethodName(predicateType)}." +
+                                                        $"{GetPredicateMethodName(predicateType)}");
+                    }
+                case ExpressionType.OrElse:
+                    {
+                        throw new SqlBulkToolsException($"Or || expression not supported for {GetPredicateMethodName(predicateType)}.");
+                    }
+
+                default:
+                    {
+                        throw new SqlBulkToolsException($"Expression used in {GetPredicateMethodName(predicateType)} not supported. " +
+                                                        $"Only == != < <= > >= expressions are accepted.");
+                    }
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="predicateType"></param>
+        /// <returns></returns>
+        internal string GetPredicateMethodName(PredicateType predicateType)
+        {
+            return predicateType == PredicateType.Update
+                ? "UpdateWhen(...)"
+                : predicateType == PredicateType.Delete ?
+                "DeleteWhen(...)" : string.Empty;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="leftName"></param>
+        /// <param name="value"></param>
+        /// <param name="valueType"></param>
+        /// <param name="expressionType"></param>
+        /// <param name="predicateList"></param>
+        /// <param name="sqlParamsList"></param>
+        /// <param name="sortOrder"></param>
+        /// <param name="appendParam"></param>
+        /// <param name="predicateType"></param>
+        internal void BuildCondition(string leftName, string value, Type valueType, ExpressionType expressionType, 
+            List<Condition> predicateList, List<SqlParameter> sqlParamsList, PredicateType predicateType, int sortOrder, string appendParam)
+        {
+
+            Condition condition = new Condition()
+            {
+                Expression = expressionType,
+                LeftName = leftName,
+                ValueType = valueType,
+                Value = value, 
+                PredicateType = predicateType,
+                SortOrder = sortOrder
+            };
+
+            predicateList.Add(condition);
+
+
+            DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(condition.ValueType);
+            string paramName = appendParam != null ? leftName + appendParam + sortOrder : leftName;
+            SqlParameter param = new SqlParameter($"@{paramName}", sqlType);
+            param.Value = condition.Value;
+            sqlParamsList.Add(param);
+
+
+        }
+
     }
 
 }

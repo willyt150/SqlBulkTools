@@ -28,6 +28,18 @@ namespace SqlBulkTools
         {
             return new CollectionSelect<T>(list, _ext);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entityRepresentation"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public QueryObject<T> ForBasicQuery<T>(T entityRepresentation)
+        {
+            return new QueryObject<T>(entityRepresentation, _ext);
+        }
+
     }
 
     /// <summary>
@@ -45,6 +57,17 @@ namespace SqlBulkTools
         public Setup(BulkOperations ext)
         {
             _ext = ext;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public QueryObject<T> ForBasicQuery(T entity)
+        {
+            return new QueryObject<T>(entity, _ext);
         }
 
         /// <summary>
