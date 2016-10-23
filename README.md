@@ -202,7 +202,9 @@ an InvalidOperationException.
 ---------------
 ```c#
 /* Only update/delete records when the target satisfies a speicific requirement. This is used alongside
-MatchTargetOn and is available to BulkUpdate, BulkInsertOrUpdate and BulkDelete methods. */
+MatchTargetOn and is available to BulkUpdate, BulkInsertOrUpdate and BulkDelete methods. Internally, SqlBulkTools will 
+use a parameterized query for each (potentially unsafe) input and respect any custom column mappings that are applied.
+*/
 
 books = GetBooks();
 var bulk = new BulkOperations();
