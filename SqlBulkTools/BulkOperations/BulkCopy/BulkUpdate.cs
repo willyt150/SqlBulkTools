@@ -56,7 +56,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public BulkUpdate<T> UpdateWhen(Expression<Func<T, bool>> predicate)
         {
-            _helper.AddPredicate(predicate, PredicateType.Update, _updatePredicates, _parameters, _conditionSortOrder);
+            _helper.AddPredicate(predicate, PredicateType.Update, _updatePredicates, _parameters, _conditionSortOrder, Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
 
             return this;
@@ -289,7 +289,7 @@ namespace SqlBulkTools
                                       "THEN UPDATE " +
                                       _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Update) +
+                                      OperationType.Update) + "; " +
                                       "DROP TABLE " + Constants.TempTableName + ";";
 
                         command.CommandText = comm;

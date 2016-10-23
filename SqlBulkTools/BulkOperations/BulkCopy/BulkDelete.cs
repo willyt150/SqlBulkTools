@@ -70,7 +70,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public BulkDelete<T> DeleteWhen(Expression<Func<T, bool>> predicate)
         {
-            _helper.AddPredicate(predicate, PredicateType.Delete, _deletePredicates, _parameters, _conditionSortOrder);
+            _helper.AddPredicate(predicate, PredicateType.Delete, _deletePredicates, _parameters, _conditionSortOrder, Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
 
             return this;
@@ -163,7 +163,7 @@ namespace SqlBulkTools
                                       "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _deletePredicates, Constants.TargetAlias) +
                                       "THEN DELETE " +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Delete) +
+                                      OperationType.Delete) + "; " +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
 
@@ -272,7 +272,7 @@ namespace SqlBulkTools
                                       "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _deletePredicates, Constants.TargetAlias) + 
                                       "THEN DELETE " +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Delete) +
+                                      OperationType.Delete) + "; " + 
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
 

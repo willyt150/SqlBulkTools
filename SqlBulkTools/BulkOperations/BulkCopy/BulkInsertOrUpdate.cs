@@ -103,7 +103,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public BulkInsertOrUpdate<T> DeleteWhen(Expression<Func<T, bool>> predicate)
         {
-            _helper.AddPredicate(predicate, PredicateType.Delete, _deletePredicates, _parameters, _conditionSortOrder);
+            _helper.AddPredicate(predicate, PredicateType.Delete, _deletePredicates, _parameters, _conditionSortOrder, Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
 
             return this;
@@ -118,7 +118,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public BulkInsertOrUpdate<T> UpdateWhen(Expression<Func<T, bool>> predicate)
         {
-            _helper.AddPredicate(predicate, PredicateType.Update, _updatePredicates, _parameters, _conditionSortOrder);
+            _helper.AddPredicate(predicate, PredicateType.Update, _updatePredicates, _parameters, _conditionSortOrder, Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
 
             return this;
@@ -212,7 +212,7 @@ namespace SqlBulkTools
                             _deletePredicates, Constants.TargetAlias) + 
                             "THEN DELETE " : " ") +
                             _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                OperationType.InsertOrUpdate) +
+                                OperationType.InsertOrUpdate) + "; " +
                             "DROP TABLE " + Constants.TempTableName + ";";
 
                         command.CommandText = comm;
@@ -338,7 +338,7 @@ namespace SqlBulkTools
                                       _deletePredicates, Constants.TargetAlias) +
                                       "THEN DELETE " : " ") +
                                        _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                       OperationType.InsertOrUpdate) + 
+                                       OperationType.InsertOrUpdate) + "; " +
                                        "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
 

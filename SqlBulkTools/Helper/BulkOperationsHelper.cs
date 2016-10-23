@@ -183,7 +183,8 @@ namespace SqlBulkTools
                 string targetColumn = condition.CustomColumnMapping ?? condition.LeftName;
 
                 command.Append("AND [" + targetAlias + "].[" + targetColumn + "] " +
-                               GetOperator(condition) + " " + (condition.Value != "NULL" ? ("@" + condition.LeftName) : "NULL") + " ");
+                               GetOperator(condition) + " " + (condition.Value != "NULL" ? ("@" + 
+                               condition.LeftName + Constants.UniqueParamIdentifier + condition.SortOrder) : "NULL") + " ");
             }
 
             return command.ToString();
@@ -756,7 +757,7 @@ namespace SqlBulkTools
             StringBuilder sb = new StringBuilder();
             if (identityColumn == null || outputIdentity != ColumnDirection.InputOutput)
             {
-                return ("; ");
+                return null;
             }
             if (operation == OperationType.Insert)
                 sb.Append("OUTPUT INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + identityColumn + "); ");
@@ -1031,7 +1032,7 @@ namespace SqlBulkTools
         /// <param name="sortOrder"></param>
         /// <param name="appendParam"></param>
         internal void AddPredicate<T>(Expression<Func<T, bool>> predicate, PredicateType predicateType, List<Condition> predicateList, 
-            List<SqlParameter> sqlParamsList, int sortOrder, string appendParam = null)
+            List<SqlParameter> sqlParamsList, int sortOrder, string appendParam)
         {
             string leftName;
             string value;
