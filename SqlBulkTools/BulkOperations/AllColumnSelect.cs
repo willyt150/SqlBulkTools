@@ -28,9 +28,12 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="bulkCopyDelegates"></param>
         public AllColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
-            BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
-            base(list, tableName, columns, schema, sqlTimeout, bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
+            int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, 
+            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, 
+            IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) 
+            :
+            base(list, tableName, columns, schema, sqlTimeout, bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, 
+                sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
 
         }

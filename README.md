@@ -35,6 +35,7 @@ public class Book {
     public int Id {get; set;}
     public string ISBN {get; set;}
     public string Description {get; set;}
+    public int WarehouseId { get; set; }
 }
 ```
 
@@ -176,6 +177,17 @@ bulk.Setup<BookDto>()
 
 bulk.CommitTransaction("DefaultConnection");
 
+/* It's now possible to use generic types */
+
+bulk.Setup<BookDto>()
+.ForCollection(books.Select(x => new { x.ISBN }))
+.WithTable("Books")
+.AddColumn(x => x.ISBN)
+.BulkDelete()
+.MatchTargetOn(x => x.ISBN)
+
+bulk.CommitTransaction("DefaultConnection");
+
 /* 
 Notes: 
 
@@ -183,6 +195,43 @@ Notes:
 (2) MatchTargetOn is mandatory for BulkUpdate, BulkInsertOrUpdate and BulkDelete... unless you want to eat 
 an InvalidOperationException.
 */
+
+```
+
+###UpdateWhen & DeleteWhen
+---------------
+```c#
+/* Only update/delete records when the target satisfies a speicific requirement. This is used alongside
+MatchTargetOn and is available to BulkUpdate, BulkInsertOrUpdate and BulkDelete methods. */
+
+books = GetBooks();
+var bulk = new BulkOperations();
+
+/* BulkUpdate example */
+
+bulk.Setup<Book>()
+    .ForCollection(books)
+    .WithTable("Books")
+    .AddColumn(x => x.Price)
+    .BulkUpdate()
+    .MatchTargetOn(x => x.ISBN)
+    .UpdateWhen(x => x.Price <= 20); 
+
+bulk.CommitTransaction("DefaultConnection");
+
+/* BulkInsertOrUpdate example */
+
+bulk.Setup<Book>()
+.ForCollection(books)
+.WithTable("Books")
+.AddAllColumns()
+.BulkInsertOrUpdate()
+.MatchTargetOn(x => x.ISBN)
+.SetIdentityColumn(x => x.Id)
+.DeleteWhenNotMatched(true)
+.DeleteWhen(x => x.WarehouseId == 1); /* BulkInsertOrUpdate also supports UpdateWhen which applies to the records that are being updated. */
+
+bulk.CommitTransaction("DefaultConnection");
 
 ```
 

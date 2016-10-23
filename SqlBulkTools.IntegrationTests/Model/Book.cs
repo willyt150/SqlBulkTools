@@ -10,6 +10,8 @@ namespace SqlBulkTools.IntegrationTests.Model
         [Key]
         public int Id { get; set; }
 
+        public int? WarehouseId { get; set; }
+
         [MaxLength(13)]
         [Index]
         public string ISBN { get; set; }
@@ -30,6 +32,8 @@ namespace SqlBulkTools.IntegrationTests.Model
         public float? TestFloat { get; set; }
 
         public object InvalidType { get; set; }
+
+        public bool? BestSeller { get; set; }
     }
 
 }

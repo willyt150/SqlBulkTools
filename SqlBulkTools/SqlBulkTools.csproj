@@ -37,6 +37,7 @@
     <Reference Include="System" />
     <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Data.Linq" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -48,6 +49,8 @@
   <ItemGroup>
     <Compile Include="BulkOperations\AbstractColumnSelect.cs" />
     <Compile Include="BulkOperations\AbstractOperation.cs" />
+    <Compile Include="BulkOperations\Condition.cs" />
+    <Compile Include="BulkOperations\SqlTypeMap.cs" />
     <Compile Include="DataTableOperations\DataTableAbstractColumnSelect.cs" />
     <Compile Include="DataTableOperations\DataTableOperations.cs" />
     <Compile Include="DataTableOperations\DataTableAllColumnSelect.cs" />

@@ -33,14 +33,18 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="disableIndexList"></param>
         /// <param name="bulkCopyDelegates"></param>
-        public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
+        public BulkDelete(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, 
+            bool disableAllIndexes,
             Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout,
-            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
-
+            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, 
+            BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)            
+            :
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
                 bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
+            _deletePredicates = new List<Condition>();
+            _parameters = new List<SqlParameter>();
         }
 
         /// <summary>
@@ -54,6 +58,19 @@ namespace SqlBulkTools
         {
             var propertyName = _helper.GetPropertyName(columnName);
             _matchTargetOn.Add(propertyName);
+            return this;
+        }
+
+        /// <summary>
+        /// Only delete records when the target satisfies a speicific requirement. This is used in conjunction with MatchTargetOn.
+        /// See help docs for examples.  
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        public BulkDelete<T> DeleteWhen(Expression<Func<T, bool>> predicate)
+        {
+            base.AddPredicate(predicate, PredicateType.Delete);
+
             return this;
         }
 
@@ -97,6 +114,7 @@ namespace SqlBulkTools
 
             // Must be after ToDataTable is called. 
             _helper.DoColumnMappings(_customColumnMappings, _columns);
+            _helper.DoColumnMappings(_customColumnMappings, _deletePredicates);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -127,16 +145,31 @@ namespace SqlBulkTools
                             command.ExecuteNonQuery();
                         }
 
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
-                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName,
+                        OperationType.InsertOrUpdate, _identityColumn);
+
+                        if (!string.IsNullOrWhiteSpace(comm))
+                        {
+                            command.CommandText = comm;
+                            command.ExecuteNonQuery();
+                        }
+
+                        comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                       Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN DELETE " +
+                                      "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _deletePredicates, Constants.TargetAlias) +
+                                      "THEN DELETE " +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                       OperationType.Delete) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
                         command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
@@ -188,6 +221,8 @@ namespace SqlBulkTools
 
             // Must be after ToDataTable is called. 
             _helper.DoColumnMappings(_customColumnMappings, _columns);
+            _helper.DoColumnMappings(_customColumnMappings, _deletePredicates);
+
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -208,7 +243,8 @@ namespace SqlBulkTools
                         command.CommandText = _helper.BuildCreateTempTable(_columns, dtCols, _outputIdentity);
                         await command.ExecuteNonQueryAsync();
 
-                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
+                        await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize, 
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -217,17 +253,32 @@ namespace SqlBulkTools
                             await command.ExecuteNonQueryAsync();
                         }
 
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName,
+                        OperationType.InsertOrUpdate, _identityColumn);
+
+                        if (!string.IsNullOrWhiteSpace(comm))
+                        {
+                            command.CommandText = comm;
+                            command.ExecuteNonQuery();
+                        }
+
                         // Updating destination table, and dropping temp table
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Delete, _identityColumn) +
-                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                        comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                       Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN DELETE " +
+                                      "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _deletePredicates, Constants.TargetAlias) + 
+                                      "THEN DELETE " +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                       OperationType.Delete) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
                         await command.ExecuteNonQueryAsync();
 
                         if (_disableIndexList != null && _disableIndexList.Any())

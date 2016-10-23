@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Data.SqlClient;
+using System.Linq.Expressions;
 using Moq;
 using NUnit.Framework;
 using SqlBulkTools.IntegrationTests;
@@ -259,8 +260,6 @@ namespace SqlBulkTools.UnitTests
 
         }
 
-
-
         [Test]
         public void BulkOperationsHelper_GetDropTmpTableCmd_ReturnsCorrectCmd()
         {
@@ -274,6 +273,278 @@ namespace SqlBulkTools.UnitTests
             // Assert
             Assert.AreEqual(expected, result);
 
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanDecimalCondition()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] {"stub"};
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.LessThan,
+                    LeftName = "Price",
+                    Value = "50",
+                    ValueType = typeof (decimal)
+                }
+            };
+
+            var expected = "AND [Target].[Price] < @Price ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNullCondition()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.Equal,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] IS NULL ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNotNullCondition()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.NotEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] IS NOT NULL ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThan()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.LessThan,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] < @Description ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanOrEqualTo()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.LessThanOrEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] <= @Description ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThan()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.GreaterThan,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] > @Description ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThanOrEqualTo()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.GreaterThanOrEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                }
+            };
+
+            var expected = "AND [Target].[Description] >= @Description ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_CustomColumnMapping()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.GreaterThanOrEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                    CustomColumnMapping = "ShortDescription"
+                }
+            };
+
+            var expected = "AND [Target].[ShortDescription] >= @Description ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_MultipleConditions()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn = new[] { "stub" };
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.NotEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                },
+                new Condition()
+                {
+                    Expression = ExpressionType.GreaterThanOrEqual,
+                    LeftName = "Price",
+                    Value = "50",
+                    ValueType = typeof(decimal)
+                },
+            };
+
+            var expected = "AND [Target].[Description] IS NOT NULL AND [Target].[Price] >= @Price ";
+
+            // Act
+            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+
+            // Assert
+            Assert.AreEqual(expected, result);
+        }
+
+        [Test]
+        public void BulkOperationsHelper_BuildConditionsForPredicate_ThrowsWhenUpdateOnColIsEmpty()
+        {
+            // Arrange
+            var helper = new BulkOperationsHelper();
+            var targetAlias = "Target";
+            var updateOn1 = new string[0];
+
+            var conditions = new List<Condition>()
+            {
+                new Condition()
+                {
+                    Expression = ExpressionType.NotEqual,
+                    LeftName = "Description",
+                    Value = "null",
+                },
+                new Condition()
+                {
+                    Expression = ExpressionType.GreaterThanOrEqual,
+                    LeftName = "Price",
+                    Value = "50",
+                    ValueType = typeof(decimal)
+                },
+            };
+
+            Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(updateOn1, conditions, targetAlias));
+            Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(null, conditions, targetAlias));
         }
 
         private HashSet<string> GetTestColumns()

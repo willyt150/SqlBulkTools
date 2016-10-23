@@ -33,24 +33,41 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="disableIndexList"></param>
         /// <param name="bulkCopyDelegates"></param>
-        public BulkUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, bool disableAllIndexes,
-            Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter,
-            int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
-            
+        public BulkUpdate(IEnumerable<T> list, string tableName, string schema, HashSet<string> columns, HashSet<string> disableIndexList, 
+            bool disableAllIndexes, Dictionary<string, string> customColumnMappings, int sqlTimeout, int bulkCopyTimeout, 
+            bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, 
+            BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) 
+            :
             base(list, tableName, schema, columns, disableIndexList, disableAllIndexes, customColumnMappings, sqlTimeout,
                 bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
         {
             _ext.SetBulkExt(this);
+            _updatePredicates = new List<Condition>();
+            _parameters = new List<SqlParameter>();
         }
 
-    /// <summary>
-    /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
-    /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
-    /// for matching composite relationships. 
-    /// </summary>
-    /// <param name="columnName"></param>
-    /// <returns></returns>
-    public BulkUpdate<T> MatchTargetOn(Expression<Func<T, object>> columnName)
+        /// <summary>
+        /// Only update records when the target satisfies a speicific requirement. This is used in conjunction with MatchTargetOn.
+        /// See help docs for examples.  
+        /// </summary>
+        /// <param name="predicate"></param>
+        /// <returns></returns>
+        /// <exception cref="SqlBulkToolsException"></exception>
+        public BulkUpdate<T> UpdateWhen(Expression<Func<T, bool>> predicate)
+        {
+            base.AddPredicate(predicate, PredicateType.Update);
+
+            return this;
+        }
+
+        /// <summary>
+        /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
+        /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
+        /// for matching composite relationships. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public BulkUpdate<T> MatchTargetOn(Expression<Func<T, object>> columnName)
         {
             var propertyName = _helper.GetPropertyName(columnName);
 
@@ -102,6 +119,7 @@ namespace SqlBulkTools
 
             // Must be after ToDataTable is called. 
             _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
+            _helper.DoColumnMappings(_customColumnMappings, _updatePredicates);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -124,7 +142,7 @@ namespace SqlBulkTools
                         //Bulk insert into temp table
                         _helper.InsertToTmpTable(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
                             _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
-                    
+
                         // Updating destination table, and dropping temp table
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -133,22 +151,37 @@ namespace SqlBulkTools
                             command.ExecuteNonQuery();
                         }
 
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Update, _identityColumn) +
-                                      "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName,
+                        OperationType.InsertOrUpdate, _identityColumn);
+
+                        if (!string.IsNullOrWhiteSpace(comm))
+                        {
+                            command.CommandText = comm;
+                            command.ExecuteNonQuery();
+                        }
+
+                        comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
                                       "USING " + Constants.TempTableName + " AS Source " +
                                       _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
                                           Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN " +
+                                      "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _updatePredicates, Constants.TargetAlias) +
+                                      "THEN " +
                                       _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
                                 OperationType.Update) + "; " +
                                       "DROP TABLE " + Constants.TempTableName + ";";
                         command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
                         command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _schema, 
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, _schema,
                                 conn, _disableIndexList);
                             command.ExecuteNonQuery();
                         }
@@ -206,6 +239,7 @@ namespace SqlBulkTools
 
             // Must be after ToDataTable is called. 
             _helper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
+            _helper.DoColumnMappings(_customColumnMappings, _updatePredicates);
 
             using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -227,32 +261,47 @@ namespace SqlBulkTools
 
                         //Bulk insert into temp table
                         await _helper.InsertToTmpTableAsync(conn, transaction, dt, _bulkCopyEnableStreaming, _bulkCopyBatchSize,
-                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);                                           
+                            _bulkCopyNotifyAfter, _bulkCopyTimeout, _sqlBulkCopyOptions, _bulkCopyDelegates);
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName, 
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Disable, _tableName,
                                 _schema, conn, _disableIndexList, _disableAllIndexes);
                             await command.ExecuteNonQueryAsync();
                         }
 
+                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName,
+                        OperationType.InsertOrUpdate, _identityColumn);
+
+                        if (!string.IsNullOrWhiteSpace(comm))
+                        {
+                            command.CommandText = comm;
+                            command.ExecuteNonQuery();
+                        }
+
                         // Updating destination table, and dropping temp table
-                        string comm = _helper.GetOutputCreateTableCmd(_outputIdentity, Constants.TempOutputTableName, OperationType.Update, _identityColumn) + 
-                                       "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
-                                      "USING "+ Constants.TempTableName + " AS Source " +
-                                      _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(),
-                                          Constants.SourceAlias, Constants.TargetAlias) +
-                                      "WHEN MATCHED THEN " +
+                        comm = "MERGE INTO " + _helper.GetFullQualifyingTableName(conn.Database, _schema, _tableName) + " WITH (HOLDLOCK) AS Target " +
+                                      "USING " + Constants.TempTableName + " AS Source " +
+                                      _helper.BuildJoinConditionsForUpdateOrInsert(_matchTargetOn.ToArray(), Constants.SourceAlias, Constants.TargetAlias) +
+                                      "WHEN MATCHED " + _helper.BuildPredicateQuery(_matchTargetOn.ToArray(), _updatePredicates, Constants.TargetAlias) +
+                                      "THEN " +
                                       _helper.BuildUpdateSet(_columns, Constants.SourceAlias, Constants.TargetAlias, _identityColumn) +
                                       _helper.GetOutputIdentityCmd(_identityColumn, _outputIdentity, Constants.TempOutputTableName,
-                                      OperationType.Update) + "; " +
+                                      OperationType.Update) +
                                       "DROP TABLE " + Constants.TempTableName + ";";
+
                         command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
                         await command.ExecuteNonQueryAsync();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
-                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName, 
+                            command.CommandText = _helper.GetIndexManagementCmd(IndexOperation.Rebuild, _tableName,
                                 _schema, conn, _disableIndexList);
                             await command.ExecuteNonQueryAsync();
                         }

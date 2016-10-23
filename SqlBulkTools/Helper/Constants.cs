@@ -1,4 +1,5 @@
-﻿namespace SqlBulkTools
+﻿ // ReSharper disable once CheckNamespace
+namespace SqlBulkTools
 {
     internal static class Constants
     {
@@ -24,10 +25,16 @@
     {        
         Input, InputOutput       
     }
-    #pragma warning restore 1591
+    
 
     internal enum OperationType
     {
         Insert, InsertOrUpdate, Update, Delete
     }
+
+    public enum PredicateType
+    {
+        Update, Delete
+    }
+#pragma warning restore 1591
 }

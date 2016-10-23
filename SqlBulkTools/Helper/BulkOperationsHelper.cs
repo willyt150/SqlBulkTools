@@ -17,6 +17,7 @@ namespace SqlBulkTools
 {
     internal class BulkOperationsHelper
     {
+
         internal struct PrecisionType
         {
             public string NumericPrecision { get; set; }
@@ -38,8 +39,8 @@ namespace SqlBulkTools
 
                 actualColumns.Add(row["COLUMN_NAME"].ToString(), row["DATA_TYPE"].ToString());
 
-                if (columnType == "varchar" || columnType == "nvarchar" || 
-                    columnType == "char" || columnType == "binary" || 
+                if (columnType == "varchar" || columnType == "nvarchar" ||
+                    columnType == "char" || columnType == "binary" ||
                     columnType == "varbinary" || columnType == "nchar")
 
                 {
@@ -63,7 +64,7 @@ namespace SqlBulkTools
                 }
 
             }
-            
+
             StringBuilder command = new StringBuilder();
 
             command.Append("CREATE TABLE " + Constants.TempTableName + "(");
@@ -151,7 +152,7 @@ namespace SqlBulkTools
         {
             StringBuilder command = new StringBuilder();
 
-            command.Append("ON " + "[" + targetAlias + "]" + "." + "[" + updateOn[0] + "]" + " = " + "[" + sourceAlias + "]" + "." 
+            command.Append("ON " + "[" + targetAlias + "]" + "." + "[" + updateOn[0] + "]" + " = " + "[" + sourceAlias + "]" + "."
                 + "[" + updateOn[0] + "]" + " ");
 
             if (updateOn.Length > 1)
@@ -159,12 +160,80 @@ namespace SqlBulkTools
                 // Start from index 1 to just append "AND" conditions
                 for (int i = 1; i < updateOn.Length; i++)
                 {
-                    command.Append("AND " + "[" + targetAlias + "]" + "." + "[" + updateOn[i] + "]" + " = " + "[" + 
+                    command.Append("AND " + "[" + targetAlias + "]" + "." + "[" + updateOn[i] + "]" + " = " + "[" +
                         sourceAlias + "]" + "." + "[" + updateOn[i] + "]" + " ");
                 }
             }
 
             return command.ToString();
+        }
+
+        internal string BuildPredicateQuery(string[] updateOn, IEnumerable<Condition> conditions, string targetAlias)
+        {
+            if (conditions == null)
+                return null;
+
+            if (updateOn == null || updateOn.Length == 0)
+                throw new SqlBulkToolsException("MatchTargetOn is required for AndQuery.");
+
+            StringBuilder command = new StringBuilder();
+           
+            foreach (var condition in conditions)
+            {
+                string targetColumn = condition.CustomColumnMapping ?? condition.LeftName;
+
+                command.Append("AND [" + targetAlias + "].[" + targetColumn + "] " +
+                               GetOperator(condition) + " " + (condition.Value != "NULL" ? ("@" + condition.LeftName) : "NULL") + " ");
+            }
+
+            return command.ToString();
+
+        }
+
+        internal string GetOperator(Condition condition)
+        {
+            switch (condition.Expression)
+            {
+                case ExpressionType.NotEqual:
+                    {
+                        if (condition.ValueType == null)
+                        {
+                            condition.Value = condition.Value?.ToUpper();
+                            return "IS NOT";
+                        }
+
+                        return "!=";
+                    }
+                case ExpressionType.Equal:
+                    {
+                        if (condition.ValueType == null)
+                        {
+                            condition.Value = condition.Value?.ToUpper();
+                            return "IS";
+                        }
+
+                        return "=";
+                    }
+                case ExpressionType.LessThan:
+                    {
+                        return "<";
+                    }
+                case ExpressionType.LessThanOrEqual:
+                    {
+                        return "<=";
+                    }
+                case ExpressionType.GreaterThan:
+                    {
+                        return ">";
+                    }
+                case ExpressionType.GreaterThanOrEqual:
+                    {
+                        return ">=";
+                    }
+            }
+
+            throw new SqlBulkToolsException("ExpressionType not found when trying to map logical operator.");
+
         }
 
         internal string BuildUpdateSet(HashSet<string> columns, string sourceAlias, string targetAlias, string identityColumn)
@@ -179,7 +248,7 @@ namespace SqlBulkTools
                 if (identityColumn != null && column != identityColumn || identityColumn == null)
                 {
                     if (column != Constants.InternalId)
-                        paramsSeparated.Add("[" + targetAlias + "]" + "." + "[" + column + "]" + " = " + "[" + sourceAlias + "]" + "." 
+                        paramsSeparated.Add("[" + targetAlias + "]" + "." + "[" + column + "]" + " = " + "[" + sourceAlias + "]" + "."
                             + "[" + column + "]");
                 }
             }
@@ -286,7 +355,7 @@ namespace SqlBulkTools
             return memberExpr.Member.Name;
         }
 
-        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings, 
+        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings,
             List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
         {
             if (columns == null)
@@ -346,11 +415,11 @@ namespace SqlBulkTools
                     else
                         for (int i = 0; i < props.Length; i++)
                         {
-                            if (props[i].Name == column && item != null 
+                            if (props[i].Name == column && item != null
                                 && CheckForValidDataType(props[i].PropertyType, throwIfInvalid: true))
                                 values.Add(props[i].GetValue(item, null));
-                            
-                                
+
+
                         }
 
                 }
@@ -374,10 +443,10 @@ namespace SqlBulkTools
         private bool CheckForValidDataType(Type type, bool throwIfInvalid = false)
         {
             if (type.IsValueType ||
-                type == typeof (string) ||
-                type == typeof (byte[]) ||
-                type == typeof (char[]) ||
-                type == typeof (SqlXml)
+                type == typeof(string) ||
+                type == typeof(byte[]) ||
+                type == typeof(char[]) ||
+                type == typeof(SqlXml)
                 )
                 return true;
 
@@ -505,6 +574,19 @@ namespace SqlBulkTools
             }
         }
 
+        internal void DoColumnMappings(Dictionary<string, string> columnMappings, List<Condition> predicateConditions)
+        {
+            foreach (var condition in predicateConditions)
+            {
+                string columnName;
+
+                if (columnMappings.TryGetValue(condition.LeftName, out columnName))
+                {
+                    condition.CustomColumnMapping = columnName;
+                }
+            }
+        }  
+
         /// <summary>
         /// Advanced Settings for SQLBulkCopy class. 
         /// </summary>
@@ -514,7 +596,7 @@ namespace SqlBulkTools
         /// <param name="bulkCopyNotifyAfter"></param>
         /// <param name="bulkCopyTimeout"></param>
         /// <param name="bulkCopyDelegates"></param>
-        internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize, 
+        internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize,
             int? bulkCopyNotifyAfter, int bulkCopyTimeout, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             bulkcopy.EnableStreaming = bulkCopyEnableStreaming;
@@ -589,11 +671,11 @@ namespace SqlBulkTools
                 sb.Append("OUTPUT INSERTED." + identityColumn + " INTO " + tmpTableName + "(" + identityColumn + "); ");
 
             else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update)
-                sb.Append("OUTPUT Source." + Constants.InternalId + ", INSERTED." + identityColumn + " INTO " + tmpTableName 
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", INSERTED." + identityColumn + " INTO " + tmpTableName
                     + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
             else if (operation == OperationType.Delete)
-                sb.Append("OUTPUT Source." + Constants.InternalId + ", DELETED." + identityColumn + " INTO " + tmpTableName 
+                sb.Append("OUTPUT Source." + Constants.InternalId + ", DELETED." + identityColumn + " INTO " + tmpTableName
                     + "(" + Constants.InternalId + ", " + identityColumn + "); ");
 
             return sb.ToString();
@@ -606,7 +688,7 @@ namespace SqlBulkTools
                 return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" + "[" + identityColumn + "] int); " : "");
 
             else if (operation == OperationType.InsertOrUpdate || operation == OperationType.Update || operation == OperationType.Delete)
-                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "(" 
+                return (outputIdentity == ColumnDirection.InputOutput ? "CREATE TABLE " + tmpTablename + "("
                     + "[" + Constants.InternalId + "]" + " int, [" + identityColumn + "] int); " : "");
 
             return string.Empty;
@@ -617,7 +699,7 @@ namespace SqlBulkTools
             return "DROP TABLE " + Constants.TempOutputTableName + ";";
         }
 
-        internal string GetIndexManagementCmd(string action, string tableName, 
+        internal string GetIndexManagementCmd(string action, string tableName,
             string schema, IDbConnection conn, HashSet<string> disableIndexList, bool disableAllIndexes = false)
         {
             StringBuilder sb = new StringBuilder();
@@ -660,16 +742,16 @@ namespace SqlBulkTools
             var dtCols = conn.GetSchema("Columns", restrictions);
 
             if (dtCols.Rows.Count == 0 && schema != null)
-                throw new SqlBulkToolsException("Table name '" + tableName 
+                throw new SqlBulkToolsException("Table name '" + tableName
                 + "\' with schema name \'" + schema + "\' not found. Check your setup and try again.");
 
             if (dtCols.Rows.Count == 0)
-                throw new SqlBulkToolsException("Table name \'" + tableName 
+                throw new SqlBulkToolsException("Table name \'" + tableName
                 + "\' not found. Check your setup and try again.");
             return dtCols;
         }
 
-        internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming, 
+        internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
             int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
@@ -699,14 +781,14 @@ namespace SqlBulkTools
             }
         }
 
-        internal void LoadFromTmpOutputTable<T>(SqlCommand command, string identityColumn, Dictionary<int, T> outputIdentityDic, 
+        internal void LoadFromTmpOutputTable<T>(SqlCommand command, string identityColumn, Dictionary<int, T> outputIdentityDic,
             OperationType operationType, IEnumerable<T> list)
         {
             if (operationType == OperationType.InsertOrUpdate
                 || operationType == OperationType.Update
                 || operationType == OperationType.Delete)
             {
-                command.CommandText = "SELECT " + Constants.InternalId + ", " + identityColumn + " FROM " 
+                command.CommandText = "SELECT " + Constants.InternalId + ", " + identityColumn + " FROM "
                     + Constants.TempOutputTableName + ";";
 
                 using (SqlDataReader reader = command.ExecuteReader())
@@ -715,13 +797,13 @@ namespace SqlBulkTools
                     {
                         T item;
 
-                        if (outputIdentityDic.TryGetValue((int) reader[0], out item))
+                        if (outputIdentityDic.TryGetValue((int)reader[0], out item))
                         {
                             PropertyInfo p = item.GetType().GetProperty(identityColumn);
 
                             if (p.CanWrite)
-                               p.SetValue(item, reader[1], null);
-                            
+                                p.SetValue(item, reader[1], null);
+
                             else
                                 throw new SqlBulkToolsException(GetPrivateSetterExceptionMessage(identityColumn));
                         }
@@ -828,7 +910,7 @@ namespace SqlBulkTools
             return $"No setter method available on property '{columnName}'. Could not write output back to property.";
         }
 
-        internal string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName, 
+        internal string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName,
             HashSet<string> columns, string identityColumn, ColumnDirection outputIdentity)
         {
 
@@ -836,7 +918,7 @@ namespace SqlBulkTools
                 tableName);
 
             string comm =
-            GetOutputCreateTableCmd(outputIdentity, Constants.TempOutputTableName, 
+            GetOutputCreateTableCmd(outputIdentity, Constants.TempOutputTableName,
             OperationType.Insert, identityColumn) +
             BuildInsertIntoSet(columns, identityColumn, fullTableName)
             + "OUTPUT INSERTED.[" + identityColumn + "] INTO "
@@ -850,4 +932,3 @@ namespace SqlBulkTools
     }
 
 }
- 
