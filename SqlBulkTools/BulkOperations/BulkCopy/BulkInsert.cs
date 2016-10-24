@@ -69,18 +69,21 @@ namespace SqlBulkTools
             return this;
         }
 
-        void ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+
+            int affectedRows = 0;
+
             if (!_list.Any())
             {
-                return;
+                return affectedRows;
             }
 
             base.IndexCheck();
 
             DataTable dt = BulkOperationsHelper.CreateDataTable<T>(_columns, _customColumnMappings, _matchTargetOn, _outputIdentity);
             dt = BulkOperationsHelper.ConvertListToDataTable(dt, _list, _columns);
-
+           
             // Must be after ToDataTable is called. 
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns, _matchTargetOn);
 
@@ -144,8 +147,10 @@ namespace SqlBulkTools
                             }
 
                             transaction.Commit();
-
                             bulkcopy.Close();
+
+                            affectedRows = dt.Rows.Count;
+                            return affectedRows;
                         }
 
                         catch (Exception)
@@ -170,11 +175,12 @@ namespace SqlBulkTools
         /// <param name="credentials"></param>
         /// <param name="connection"></param>
         /// <returns></returns>
-        async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
             if (!_list.Any())
             {
-                return;
+                return affectedRows;
             }
 
             base.IndexCheck();
@@ -247,8 +253,10 @@ namespace SqlBulkTools
                                 await command.ExecuteNonQueryAsync();
                             }
                             transaction.Commit();
-
                             bulkcopy.Close();
+
+                            affectedRows = dt.Rows.Count;
+                            return affectedRows;
                         }
 
                         catch (Exception)

@@ -101,11 +101,12 @@ namespace SqlBulkTools
             return this;
         }
 
-        void ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRecords = 0;
             if (!_list.Any())
             {
-                return;
+                return affectedRecords;
             }
 
             base.IndexCheck();
@@ -172,7 +173,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        command.ExecuteNonQuery();
+                        affectedRecords = command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -187,7 +188,7 @@ namespace SqlBulkTools
                         }
 
                         transaction.Commit();
-
+                        return affectedRecords;
                     }
                     catch (Exception)
                     {
@@ -209,11 +210,12 @@ namespace SqlBulkTools
         /// <param name="credentials"></param>
         /// <param name="connection"></param>
         /// <returns></returns>
-        async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
             if (!_list.Any())
             {
-                return;
+                return affectedRows;
             }
             base.IndexCheck();
             base.MatchTargetCheck();
@@ -281,7 +283,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        await command.ExecuteNonQueryAsync();
+                        affectedRows = await command.ExecuteNonQueryAsync();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -298,7 +300,7 @@ namespace SqlBulkTools
                         }
 
                         transaction.Commit();
-
+                        return affectedRows;
                     }
                     catch (Exception)
                     {

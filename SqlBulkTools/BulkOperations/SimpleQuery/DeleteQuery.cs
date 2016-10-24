@@ -26,7 +26,7 @@ namespace SqlBulkTools
         private readonly List<Condition> _andConditions;
         private readonly List<Condition> _orConditions;
         private readonly List<SqlParameter> _parameters;
-        private readonly int _conditionSortOrder;
+        private int _conditionSortOrder;
 
         /// <summary>
         /// 
@@ -65,6 +65,8 @@ namespace SqlBulkTools
             // _whereConditions list will only ever contain one element.
             BulkOperationsHelper.AddPredicate(expression, PredicateType.Where, _whereConditions, _parameters, 
                 _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
+
+            _conditionSortOrder++;
 
             return new DeleteQueryWhere<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
                 _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters);

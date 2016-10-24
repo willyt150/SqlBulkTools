@@ -68,7 +68,8 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public DeleteQueryWhere<T> And(Expression<Func<T, bool>> expression)
         {
-           
+
+            _conditionSortOrder++;
             return this;
         }
 
@@ -80,15 +81,17 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public DeleteQueryWhere<T> Or(Expression<Func<T, bool>> expression)
         {
-            
+
+            _conditionSortOrder++;
             return this;
         }
 
-        void ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
             if (_singleEntity == null)
             {
-                throw new SqlBulkToolsException("Nothing to delete");
+                return affectedRows;
             }
 
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
@@ -126,8 +129,10 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        command.ExecuteNonQuery();
+                        affectedRows = command.ExecuteNonQuery();
                         transaction.Commit();
+
+                        return affectedRows;
                     }
 
                     catch (Exception)
@@ -144,9 +149,11 @@ namespace SqlBulkTools
             }
         }
 
-        async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
 
+            return affectedRows;
         }
     }
 }

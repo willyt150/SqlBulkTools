@@ -106,11 +106,12 @@ namespace SqlBulkTools
             return this;
         }
 
-        void ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
             if (!_list.Any())
             {
-                return;
+                return affectedRows;
             }
 
             base.IndexCheck();
@@ -179,7 +180,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        command.ExecuteNonQuery();
+                        affectedRows = command.ExecuteNonQuery();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -194,6 +195,7 @@ namespace SqlBulkTools
                         }
 
                         transaction.Commit();
+                        return affectedRows;
                     }
 
 
@@ -226,11 +228,12 @@ namespace SqlBulkTools
             }
         }
 
-        async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            int affectedRows = 0;
             if (!_list.Any())
             {
-                return;
+                return affectedRows;
             }
 
             base.IndexCheck();
@@ -299,7 +302,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        await command.ExecuteNonQueryAsync();
+                        affectedRows = await command.ExecuteNonQueryAsync();
 
                         if (_disableIndexList != null && _disableIndexList.Any())
                         {
@@ -316,6 +319,7 @@ namespace SqlBulkTools
                         }
 
                         transaction.Commit();
+                        return affectedRows;
                     }
 
 
