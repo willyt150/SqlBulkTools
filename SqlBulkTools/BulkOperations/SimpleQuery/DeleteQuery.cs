@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -48,7 +45,7 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _whereConditions = new List<Condition>(); 
+            _whereConditions = new List<Condition>();
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
             _parameters = new List<SqlParameter>();

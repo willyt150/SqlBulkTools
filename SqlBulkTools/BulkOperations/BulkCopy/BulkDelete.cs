@@ -230,12 +230,11 @@ namespace SqlBulkTools
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
-                conn.Open();
+                await conn.OpenAsync();
                 var dtCols = BulkOperationsHelper.GetDatabaseSchema(conn, _schema, _tableName);
 
                 using (SqlTransaction transaction = conn.BeginTransaction())
                 {
-
                     try
                     {
                         SqlCommand command = conn.CreateCommand();

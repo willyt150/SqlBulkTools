@@ -152,8 +152,64 @@ namespace SqlBulkTools
         async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             int affectedRows = 0;
+            if (_singleEntity == null)
+            {
+                return affectedRows;
+            }
 
-            return affectedRows;
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+
+            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
+
+            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+
+
+            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            {
+                await conn.OpenAsync();
+
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        SqlCommand command = conn.CreateCommand();
+                        command.Connection = conn;
+                        command.Transaction = transaction;
+                        command.CommandTimeout = _sqlTimeout;
+
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
+                            _tableName);
+
+                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
+                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+                        command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
+                        affectedRows = await command.ExecuteNonQueryAsync();
+                        transaction.Commit();
+
+                        return affectedRows;
+                    }
+
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+
+                    finally
+                    {
+                        conn.Close();
+                    }
+                }
+            }
         }
     }
 }
