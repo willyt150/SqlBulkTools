@@ -60,12 +60,12 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// 
+        /// Use this option for simple updates or deletes where you are only dealing with a single table 
+        /// and conditions are not complex. For anything more advanced, use a stored procedure.  
         /// </summary>
         /// <param name="entity"></param>
-        /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public QueryObject<T> ForBasicQuery(T entity)
+        public QueryObject<T> ForSimpleQuery(T entity)
         {
             return new QueryObject<T>(entity, _ext);
         }

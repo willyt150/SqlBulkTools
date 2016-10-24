@@ -15,7 +15,7 @@ using System.Threading.Tasks;
 [assembly: InternalsVisibleTo("SqlBulkTools.IntegrationTests")]
 namespace SqlBulkTools
 {
-    internal class BulkOperationsHelper
+    internal static class BulkOperationsHelper
     {
 
         internal struct PrecisionType
@@ -24,7 +24,7 @@ namespace SqlBulkTools
             public string NumericScale { get; set; }
         }
 
-        internal string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
+        internal static string BuildCreateTempTable(HashSet<string> columns, DataTable schema, ColumnDirection outputIdentity)
         {
             Dictionary<string, string> actualColumns = new Dictionary<string, string>();
             Dictionary<string, string> actualColumnsMaxCharLength = new Dictionary<string, string>();
@@ -99,7 +99,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        private string GetVariableCharType(string column, string columnType, Dictionary<string, string> actualColumnsMaxCharLength)
+        private static string GetVariableCharType(string column, string columnType, Dictionary<string, string> actualColumnsMaxCharLength)
         {
             if (columnType == "varchar" || columnType == "nvarchar" ||
                     columnType == "char" || columnType == "binary" ||
@@ -118,7 +118,7 @@ namespace SqlBulkTools
             return columnType;
         }
 
-        private string GetDecimalPrecisionAndScaleType(string column, string columnType, Dictionary<string, PrecisionType> actualColumnsPrecision)
+        private static string GetDecimalPrecisionAndScaleType(string column, string columnType, Dictionary<string, PrecisionType> actualColumnsPrecision)
         {
             if (columnType == "decimal" || columnType == "numeric")
             {
@@ -133,7 +133,7 @@ namespace SqlBulkTools
             return columnType;
         }
 
-        private string GetDateTimePrecisionType(string column, string columnType, Dictionary<string, string> actualColumnsDateTimePrecision)
+        private static string GetDateTimePrecisionType(string column, string columnType, Dictionary<string, string> actualColumnsDateTimePrecision)
         {
             if (columnType == "datetime2" || columnType == "time")
             {
@@ -148,7 +148,7 @@ namespace SqlBulkTools
             return columnType;
         }
 
-        internal string BuildJoinConditionsForUpdateOrInsert(string[] updateOn, string sourceAlias, string targetAlias)
+        internal static string BuildJoinConditionsForUpdateOrInsert(string[] updateOn, string sourceAlias, string targetAlias)
         {
             StringBuilder command = new StringBuilder();
 
@@ -168,7 +168,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal string BuildPredicateQuery(string[] updateOn, IEnumerable<Condition> conditions, string targetAlias)
+        internal static string BuildPredicateQuery(string[] updateOn, IEnumerable<Condition> conditions, string targetAlias)
         {
             if (conditions == null)
                 return null;
@@ -192,7 +192,7 @@ namespace SqlBulkTools
         }
 
         // Used for UpdateQuery and DeleteQuery where, and, or conditions. 
-        internal string BuildPredicateQuery(IEnumerable<Condition> conditions)
+        internal static string BuildPredicateQuery(IEnumerable<Condition> conditions)
         {
             if (conditions == null)
                 return null;
@@ -239,7 +239,7 @@ namespace SqlBulkTools
 
         }
 
-        internal string GetOperator(Condition condition)
+        internal static string GetOperator(Condition condition)
         {
             switch (condition.Expression)
             {
@@ -285,7 +285,7 @@ namespace SqlBulkTools
 
         }
 
-        internal string BuildUpdateSet(HashSet<string> columns, string sourceAlias, string targetAlias, string identityColumn)
+        internal static string BuildUpdateSet(HashSet<string> columns, string sourceAlias, string targetAlias, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> paramsSeparated = new List<string>();
@@ -313,7 +313,7 @@ namespace SqlBulkTools
         /// <param name="columns"></param>
         /// <param name="fullQualifiedTableName"></param>
         /// <returns></returns>
-        internal string BuildUpdateSet(HashSet<string> columns, string fullQualifiedTableName)
+        internal static string BuildUpdateSet(HashSet<string> columns, string fullQualifiedTableName)
         {
             StringBuilder command = new StringBuilder();
             List<string> paramsSeparated = new List<string>();
@@ -330,7 +330,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal string BuildInsertSet(HashSet<string> columns, string sourceAlias, string identityColumn)
+        internal static string BuildInsertSet(HashSet<string> columns, string sourceAlias, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> insertColumns = new List<string>();
@@ -357,7 +357,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal string BuildInsertIntoSet(HashSet<string> columns, string identityColumn, string tableName)
+        internal static string BuildInsertIntoSet(HashSet<string> columns, string identityColumn, string tableName)
         {
             StringBuilder command = new StringBuilder();
             List<string> insertColumns = new List<string>();
@@ -378,7 +378,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal string BuildSelectSet(HashSet<string> columns, string sourceAlias, string identityColumn)
+        internal static string BuildSelectSet(HashSet<string> columns, string sourceAlias, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> selectColumns = new List<string>();
@@ -403,7 +403,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal string GetPropertyName(Expression method)
+        internal static string GetPropertyName(Expression method)
         {
             LambdaExpression lambda = method as LambdaExpression;
             if (lambda == null)
@@ -427,7 +427,7 @@ namespace SqlBulkTools
             return memberExpr.Member.Name;
         }
 
-        internal DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings,
+        internal static DataTable CreateDataTable<T>(HashSet<string> columns, Dictionary<string, string> columnMappings,
             List<string> matchOnColumns = null, ColumnDirection? outputIdentity = null)
         {
             if (columns == null)
@@ -464,7 +464,7 @@ namespace SqlBulkTools
             return dataTable;
         }
 
-        public DataTable ConvertListToDataTable<T>(DataTable dataTable, IEnumerable<T> list, HashSet<string> columns,
+        public static DataTable ConvertListToDataTable<T>(DataTable dataTable, IEnumerable<T> list, HashSet<string> columns,
             Dictionary<int, T> outputIdentityDic = null)
         {
 
@@ -504,7 +504,7 @@ namespace SqlBulkTools
         }
 
         // Loops through object properties, checks if column has been added, adds as sql parameter. Used for the UpdateQuery method. 
-        public void AddSqlParamsForUpdateQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item)
+        public static void AddSqlParamsForUpdateQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item)
         {
             PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -532,7 +532,7 @@ namespace SqlBulkTools
         /// Set this to true if user is manually adding columns. If AddAllColumns is used, then this can be omitted. 
         /// </param>
         /// <returns></returns>
-        private bool CheckForValidDataType(Type type, bool throwIfInvalid = false)
+        private static bool CheckForValidDataType(Type type, bool throwIfInvalid = false)
         {
             if (type.IsValueType ||
                 type == typeof(string) ||
@@ -550,7 +550,7 @@ namespace SqlBulkTools
             return false;
         }
 
-        private void AssignTypes(PropertyInfo[] props, HashSet<string> columns, DataTable dataTable)
+        private static void AssignTypes(PropertyInfo[] props, HashSet<string> columns, DataTable dataTable)
         {
             int count = 0;
 
@@ -573,7 +573,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal SqlConnection GetSqlConnection(string connectionName, SqlCredential credentials, SqlConnection connection)
+        internal static SqlConnection GetSqlConnection(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             SqlConnection conn = null;
 
@@ -593,7 +593,7 @@ namespace SqlBulkTools
             throw new SqlBulkToolsException("Could not create SQL connection. Please check your arguments into CommitTransaction");
         }
 
-        internal string GetFullQualifyingTableName(string databaseName, string schemaName, string tableName)
+        internal static string GetFullQualifyingTableName(string databaseName, string schemaName, string tableName)
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("[");
@@ -614,7 +614,7 @@ namespace SqlBulkTools
         /// <param name="columns"></param>
         /// <param name="matchOnColumns"></param>
         /// <returns></returns>
-        internal HashSet<string> CheckForAdditionalColumns(HashSet<string> columns, List<string> matchOnColumns)
+        internal static HashSet<string> CheckForAdditionalColumns(HashSet<string> columns, List<string> matchOnColumns)
         {
             foreach (var col in matchOnColumns)
             {
@@ -627,7 +627,7 @@ namespace SqlBulkTools
             return columns;
         }
 
-        internal void DoColumnMappings(Dictionary<string, string> columnMappings, HashSet<string> columns,
+        internal static void DoColumnMappings(Dictionary<string, string> columnMappings, HashSet<string> columns,
         List<string> updateOnList)
         {
             if (columnMappings.Count > 0)
@@ -651,7 +651,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal void DoColumnMappings(Dictionary<string, string> columnMappings, HashSet<string> columns)
+        internal static void DoColumnMappings(Dictionary<string, string> columnMappings, HashSet<string> columns)
         {
             if (columnMappings.Count > 0)
             {
@@ -666,7 +666,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal void DoColumnMappings(Dictionary<string, string> columnMappings, List<Condition> predicateConditions)
+        internal static void DoColumnMappings(Dictionary<string, string> columnMappings, List<Condition> predicateConditions)
         {
             foreach (var condition in predicateConditions)
             {
@@ -688,7 +688,7 @@ namespace SqlBulkTools
         /// <param name="bulkCopyNotifyAfter"></param>
         /// <param name="bulkCopyTimeout"></param>
         /// <param name="bulkCopyDelegates"></param>
-        internal void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize,
+        internal static void SetSqlBulkCopySettings(SqlBulkCopy bulkcopy, bool bulkCopyEnableStreaming, int? bulkCopyBatchSize,
             int? bulkCopyNotifyAfter, int bulkCopyTimeout, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             bulkcopy.EnableStreaming = bulkCopyEnableStreaming;
@@ -714,7 +714,7 @@ namespace SqlBulkTools
         /// <param name="bulkCopy"></param>
         /// <param name="columns"></param>
         /// <param name="customColumnMappings"></param>
-        internal void MapColumns(SqlBulkCopy bulkCopy, HashSet<string> columns, Dictionary<string, string> customColumnMappings)
+        internal static void MapColumns(SqlBulkCopy bulkCopy, HashSet<string> columns, Dictionary<string, string> customColumnMappings)
         {
 
             foreach (var column in columns.ToList())
@@ -732,7 +732,7 @@ namespace SqlBulkTools
 
         }
 
-        internal HashSet<string> GetAllValueTypeAndStringColumns(Type type)
+        internal static HashSet<string> GetAllValueTypeAndStringColumns(Type type)
         {
             HashSet<string> columns = new HashSet<string>();
 
@@ -751,7 +751,7 @@ namespace SqlBulkTools
 
         }
 
-        internal string GetOutputIdentityCmd(string identityColumn, ColumnDirection outputIdentity, string tmpTableName, OperationType operation)
+        internal static string GetOutputIdentityCmd(string identityColumn, ColumnDirection outputIdentity, string tmpTableName, OperationType operation)
         {
 
             StringBuilder sb = new StringBuilder();
@@ -773,7 +773,7 @@ namespace SqlBulkTools
             return sb.ToString();
         }
 
-        internal string GetOutputCreateTableCmd(ColumnDirection outputIdentity, string tmpTablename, OperationType operation, string identityColumn)
+        internal static string GetOutputCreateTableCmd(ColumnDirection outputIdentity, string tmpTablename, OperationType operation, string identityColumn)
         {
 
             if (operation == OperationType.Insert)
@@ -786,12 +786,12 @@ namespace SqlBulkTools
             return string.Empty;
         }
 
-        internal string GetDropTmpTableCmd()
+        internal static string GetDropTmpTableCmd()
         {
             return "DROP TABLE " + Constants.TempOutputTableName + ";";
         }
 
-        internal string GetIndexManagementCmd(string action, string tableName,
+        internal static string GetIndexManagementCmd(string action, string tableName,
             string schema, IDbConnection conn, HashSet<string> disableIndexList, bool disableAllIndexes = false)
         {
             StringBuilder sb = new StringBuilder();
@@ -825,7 +825,7 @@ namespace SqlBulkTools
         /// <param name="schema"></param>
         /// <param name="tableName"></param>
         /// <returns></returns>
-        internal DataTable GetDatabaseSchema(SqlConnection conn, string schema, string tableName)
+        internal static DataTable GetDatabaseSchema(SqlConnection conn, string schema, string tableName)
         {
             string[] restrictions = new string[4];
             restrictions[0] = conn.Database;
@@ -843,7 +843,7 @@ namespace SqlBulkTools
             return dtCols;
         }
 
-        internal void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
+        internal static void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
             int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
@@ -858,7 +858,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal async Task InsertToTmpTableAsync(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
+        internal static async Task InsertToTmpTableAsync(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
             int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
@@ -873,7 +873,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal void LoadFromTmpOutputTable<T>(SqlCommand command, string identityColumn, Dictionary<int, T> outputIdentityDic,
+        internal static void LoadFromTmpOutputTable<T>(SqlCommand command, string identityColumn, Dictionary<int, T> outputIdentityDic,
             OperationType operationType, IEnumerable<T> list)
         {
             if (operationType == OperationType.InsertOrUpdate
@@ -935,7 +935,7 @@ namespace SqlBulkTools
             }
         }
 
-        internal async Task LoadFromTmpOutputTableAsync<T>(SqlCommand command, string identityColumn,
+        internal static async Task LoadFromTmpOutputTableAsync<T>(SqlCommand command, string identityColumn,
             Dictionary<int, T> outputIdentityDic, OperationType operationType, IEnumerable<T> list)
         {
             if (operationType == OperationType.InsertOrUpdate
@@ -997,12 +997,12 @@ namespace SqlBulkTools
             }
         }
 
-        private string GetPrivateSetterExceptionMessage(string columnName)
+        private static string GetPrivateSetterExceptionMessage(string columnName)
         {
             return $"No setter method available on property '{columnName}'. Could not write output back to property.";
         }
 
-        internal string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName,
+        internal static string GetInsertIntoStagingTableCmd(SqlCommand command, SqlConnection conn, string schema, string tableName,
             HashSet<string> columns, string identityColumn, ColumnDirection outputIdentity)
         {
 
@@ -1031,7 +1031,7 @@ namespace SqlBulkTools
         /// <param name="sqlParamsList"></param>
         /// <param name="sortOrder"></param>
         /// <param name="appendParam"></param>
-        internal void AddPredicate<T>(Expression<Func<T, bool>> predicate, PredicateType predicateType, List<Condition> predicateList, 
+        internal static void AddPredicate<T>(Expression<Func<T, bool>> predicate, PredicateType predicateType, List<Condition> predicateList, 
             List<SqlParameter> sqlParamsList, int sortOrder, string appendParam)
         {
             string leftName;
@@ -1193,7 +1193,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="predicateType"></param>
         /// <returns></returns>
-        internal string GetPredicateMethodName(PredicateType predicateType)
+        internal static string GetPredicateMethodName(PredicateType predicateType)
         {
             return predicateType == PredicateType.Update
                 ? "UpdateWhen(...)"
@@ -1213,7 +1213,7 @@ namespace SqlBulkTools
         /// <param name="sortOrder"></param>
         /// <param name="appendParam"></param>
         /// <param name="predicateType"></param>
-        internal void BuildCondition(string leftName, string value, Type valueType, ExpressionType expressionType, 
+        internal static void BuildCondition(string leftName, string value, Type valueType, ExpressionType expressionType, 
             List<Condition> predicateList, List<SqlParameter> sqlParamsList, PredicateType predicateType, int sortOrder, string appendParam)
         {
 
@@ -1236,9 +1236,6 @@ namespace SqlBulkTools
             param.Value = condition.Value;
             sqlParamsList.Add(param);
 
-
         }
-
     }
-
 }

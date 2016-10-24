@@ -49,14 +49,14 @@
   <ItemGroup>
     <Compile Include="BulkOperations\BulkCopy\AbstractColumnSelect.cs" />
     <Compile Include="BulkOperations\BulkCopy\AbstractOperation.cs" />
-    <Compile Include="BulkOperations\BasicQuery\DeleteQuery.cs" />
-    <Compile Include="BulkOperations\BasicQuery\DeleteQueryWhere.cs" />
-    <Compile Include="BulkOperations\BasicQuery\UpdateQueryWhere.cs" />
-    <Compile Include="BulkOperations\BasicQuery\UpdateQuery.cs" />
-    <Compile Include="BulkOperations\BasicQuery\QueryTable.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\DeleteQuery.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\DeleteQueryWhere.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\UpdateQueryWhere.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\UpdateQuery.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\QueryTable.cs" />
     <Compile Include="Helper\Condition.cs" />
-    <Compile Include="BulkOperations\BasicQuery\QueryObject.cs" />
-    <Compile Include="BulkOperations\BasicQuery\QueryColumnSelect.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\QueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\QueryColumnSelect.cs" />
     <Compile Include="Helper\SqlTypeMap.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkCopyTable.cs" />
     <Compile Include="DataTableOperations\DataTableAbstractColumnSelect.cs" />

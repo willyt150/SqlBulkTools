@@ -20,7 +20,7 @@ namespace SqlBulkTools.IntegrationTests
 
         private BookRandomizer _randomizer;
         private TestContext _db;
-        private List<Book> _bookCollection;
+
         [OneTimeSetUp]
         public void Setup()
         {
@@ -61,7 +61,7 @@ namespace SqlBulkTools.IntegrationTests
             // Update price to 100
 
             bulk.Setup<Book>()
-                .ForBasicQuery(new Book() {ISBN = isbn, Price = 100})
+                .ForSimpleQuery(new Book() {ISBN = isbn, Price = 100})
                 .WithTable("Books")
                 .AddColumn(x => x.Price)
                 .Update()

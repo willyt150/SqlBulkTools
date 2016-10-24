@@ -52,7 +52,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public AllColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
-            var propertyName = _helper.GetPropertyName(source);
+            var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
             return this;
         }
@@ -93,7 +93,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public AllColumnSelect<T> RemoveColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             if (_columns.Contains(propertyName))
                 _columns.Remove(propertyName);
 

@@ -22,11 +22,10 @@ namespace SqlBulkTools
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
-        private List<Condition> _whereConditions;
-        protected List<Condition> _andConditions;
-        protected List<Condition> _orConditions;
-        protected List<SqlParameter> _parameters;
-        private BulkOperationsHelper _helper;
+        private readonly List<Condition> _whereConditions;
+        private readonly List<Condition> _andConditions;
+        private readonly List<Condition> _orConditions;
+        private readonly List<SqlParameter> _parameters;
         private int _conditionSortOrder;
 
         /// <summary>
@@ -58,8 +57,6 @@ namespace SqlBulkTools
             _orConditions = new List<Condition>();
             _conditionSortOrder = conditionSortOrder;
             _parameters = parameters;
-            _helper = new BulkOperationsHelper();
-
         }
 
 
@@ -94,16 +91,16 @@ namespace SqlBulkTools
                 throw new SqlBulkToolsException("Nothing to delete");
             }
 
-            _helper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            _helper.DoColumnMappings(_customColumnMappings, _orConditions);
-            _helper.DoColumnMappings(_customColumnMappings, _andConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-            _helper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
+            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
 
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
             
 
-            using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
+            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
                 conn.Open();
 
@@ -116,11 +113,11 @@ namespace SqlBulkTools
                         command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
-                        string fullQualifiedTableName = _helper.GetFullQualifyingTableName(conn.Database, _schema,
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
                         string comm = $"DELETE FROM {fullQualifiedTableName} " +
-                                      $"{_helper.BuildPredicateQuery(concatenatedQuery)}";
+                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;
 

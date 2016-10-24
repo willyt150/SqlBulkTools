@@ -27,7 +27,6 @@ namespace SqlBulkTools
         private readonly List<Condition> _orConditions;
         private readonly List<SqlParameter> _parameters;
         private int _conditionSortOrder;
-        private readonly BulkOperationsHelper _helper;
 
         /// <summary>
         /// 
@@ -58,7 +57,6 @@ namespace SqlBulkTools
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
             _parameters = parameters;
-            _helper = new BulkOperationsHelper();
 
         }
 
@@ -71,7 +69,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public UpdateQueryWhere<T> And(Expression<Func<T, bool>> expression)
         {
-            _helper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
@@ -84,7 +82,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public UpdateQueryWhere<T> Or(Expression<Func<T, bool>> expression)
         {
-            _helper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
@@ -96,16 +94,16 @@ namespace SqlBulkTools
                 throw new SqlBulkToolsException("Nothing to update");
             }
 
-            _helper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            _helper.DoColumnMappings(_customColumnMappings, _orConditions);
-            _helper.DoColumnMappings(_customColumnMappings, _andConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-            _helper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
+            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
 
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
             
 
-            using (SqlConnection conn = _helper.GetSqlConnection(connectionName, credentials, connection))
+            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
                 conn.Open();
 
@@ -118,12 +116,12 @@ namespace SqlBulkTools
                         command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
-                        string fullQualifiedTableName = _helper.GetFullQualifyingTableName(conn.Database, _schema,
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
                         string comm = $"UPDATE {fullQualifiedTableName} " +
-                                      $"{_helper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
-                                      $"{_helper.BuildPredicateQuery(concatenatedQuery)}";
+                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
+                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;
 
@@ -152,7 +150,63 @@ namespace SqlBulkTools
 
         async Task ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
+            if (_singleEntity == null)
+            {
+                throw new SqlBulkToolsException("Nothing to update");
+            }
 
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+
+            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
+
+            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+
+
+            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            {
+                await conn.OpenAsync();
+
+                using (SqlTransaction transaction = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        SqlCommand command = conn.CreateCommand();
+                        command.Connection = conn;
+                        command.Transaction = transaction;
+                        command.CommandTimeout = _sqlTimeout;
+
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
+                            _tableName);
+
+                        string comm = $"UPDATE {fullQualifiedTableName} " +
+                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
+                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+                        command.CommandText = comm;
+
+                        if (_parameters.Count > 0)
+                        {
+                            command.Parameters.AddRange(_parameters.ToArray());
+                        }
+
+                        await command.ExecuteNonQueryAsync();
+                        transaction.Commit();
+                    }
+
+                    catch (Exception)
+                    {
+                        transaction.Rollback();
+                        throw;
+                    }
+
+                    finally
+                    {
+                        conn.Close();
+                    }
+                }
+            }
         }
     }
 }

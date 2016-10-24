@@ -13,7 +13,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DeleteQuery<T>
+    public class UpdateQuery<T>
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -25,9 +25,8 @@ namespace SqlBulkTools
         private readonly List<Condition> _whereConditions;
         private readonly List<Condition> _andConditions;
         private readonly List<Condition> _orConditions;
-        private readonly List<SqlParameter> _parameters;
-        private BulkOperationsHelper _helper;
-        private readonly int _conditionSortOrder;
+        private int _conditionSortOrder;
+        private readonly List<SqlParameter> _parameters;      
 
         /// <summary>
         /// 
@@ -39,8 +38,8 @@ namespace SqlBulkTools
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        public DeleteQuery(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
-            int sqlTimeout, BulkOperations ext)
+        public UpdateQuery(T singleEntity, string tableName, string schema, HashSet<string> columns, 
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, BulkOperations ext)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -49,27 +48,26 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _whereConditions = new List<Condition>(); 
+            _whereConditions = new List<Condition>();
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
             _parameters = new List<SqlParameter>();
-            _helper = new BulkOperationsHelper();
             _conditionSortOrder = 1;
-
         }
 
         /// <summary>
         /// </summary>
-        /// <param name="columnName"></param>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public DeleteQueryWhere<T> Where(Expression<Func<T, bool>> expression)
+        public UpdateQueryWhere<T> Where(Expression<Func<T, bool>> expression)
         {
             // _whereConditions list will only ever contain one element.
-            _helper.AddPredicate(expression, PredicateType.Where, _whereConditions, _parameters, 
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Where, _whereConditions, _parameters, 
                 _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
 
-            return new DeleteQueryWhere<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
+            _conditionSortOrder++;
+
+            return new UpdateQueryWhere<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
                 _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters);
         }
 

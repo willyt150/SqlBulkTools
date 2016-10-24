@@ -14,7 +14,6 @@ namespace SqlBulkTools
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
-        private readonly BulkOperationsHelper _helper;
         private Dictionary<string, string> _customColumnMappings { get; }
         private HashSet<string> _columns;
         private readonly string _schema;
@@ -41,7 +40,6 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
-            _helper = new BulkOperationsHelper();
         }
 
         /// <summary>
@@ -52,7 +50,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public QueryColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
             return this;
         }
@@ -80,7 +78,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public QueryColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
-            var propertyName = _helper.GetPropertyName(source);
+            var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
             return this;
         }

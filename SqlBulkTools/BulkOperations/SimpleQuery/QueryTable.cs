@@ -13,7 +13,6 @@ namespace SqlBulkTools
     public class QueryTable<T>
     {
         private readonly T _singleEntity;
-        private readonly BulkOperationsHelper _helper;
         private HashSet<string> Columns { get; set; }
         private string _schema;
         private readonly string _tableName;
@@ -29,7 +28,6 @@ namespace SqlBulkTools
         public QueryTable(T singleEntity, string tableName, BulkOperations ext)
         {
             _singleEntity = singleEntity;
-            _helper = new BulkOperationsHelper();
             _sqlTimeout = 600;
             _schema = Constants.DefaultSchemaName;
             Columns = new HashSet<string>();
@@ -48,7 +46,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public QueryColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
             return new QueryColumnSelect<T>(_singleEntity, _tableName, Columns, _schema, 
                 _sqlTimeout, _ext);

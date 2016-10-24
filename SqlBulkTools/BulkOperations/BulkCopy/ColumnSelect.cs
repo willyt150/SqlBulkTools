@@ -43,7 +43,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public ColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
             return this;
         }
@@ -62,7 +62,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public ColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
-            var propertyName = _helper.GetPropertyName(source);
+            var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
             return this;
         }

@@ -16,7 +16,6 @@ namespace SqlBulkTools
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // ReSharper disable InconsistentNaming
-        internal readonly BulkOperationsHelper _helper;
         protected IEnumerable<T> _list;
         protected string _tableName;
         protected string _schema;
@@ -53,7 +52,6 @@ namespace SqlBulkTools
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
-            _helper = new BulkOperationsHelper();
             _disableAllIndexes = false;
             _disableIndexList = new HashSet<string>();
             _customColumnMappings = new Dictionary<string, string>();

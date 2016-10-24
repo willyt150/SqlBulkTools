@@ -17,7 +17,6 @@ namespace SqlBulkTools
     {
         #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // ReSharper disable InconsistentNaming
-        internal readonly BulkOperationsHelper _helper;
         protected ColumnDirection _outputIdentity;
         protected BulkOperations _ext;
         protected string _identityColumn;
@@ -83,7 +82,6 @@ namespace SqlBulkTools
             _sqlBulkCopyOptions = sqlBulkCopyOptions;
             _ext = ext;
             _identityColumn = null;
-            _helper = new BulkOperationsHelper();
             _outputIdentityDic = new Dictionary<int, T>();
             _outputIdentity = ColumnDirection.Input;
             _matchTargetOn = new List<string>();
@@ -98,7 +96,7 @@ namespace SqlBulkTools
 
         protected void SetIdentity(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
 
             if (propertyName == null)
                 throw new SqlBulkToolsException("SetIdentityColumn column name can't be null");
@@ -112,6 +110,12 @@ namespace SqlBulkTools
             }
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="parameterToCheck"></param>
+        /// <typeparam name="TParameter"></typeparam>
+        /// <returns></returns>
         public static TParameter GetParameterValue<TParameter>(Expression<Func<TParameter>> parameterToCheck)
         {
             TParameter parameterValue = (TParameter)parameterToCheck.Compile().Invoke();
