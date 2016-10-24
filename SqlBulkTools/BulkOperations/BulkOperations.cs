@@ -27,7 +27,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         /// <param name="connectionName"></param>
         /// <param name="credentials"></param>
-        public void CommitTransaction(string connectionName, SqlCredential credentials = null)
+        public int CommitTransaction(string connectionName, SqlCredential credentials = null)
         {
             if (connectionName == null)
                 throw new ArgumentNullException(nameof(connectionName) + " not given");
@@ -39,7 +39,7 @@ namespace SqlBulkTools
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
             
 
-            _transaction.CommitTransaction(connectionName, credentials);
+            return _transaction.CommitTransaction(connectionName, credentials);
         }
 
         /// <summary>
@@ -52,7 +52,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public async Task CommitTransactionAsync(string connectionName, SqlCredential credentials = null)
+        public async Task<int> CommitTransactionAsync(string connectionName, SqlCredential credentials = null)
         {
             if (connectionName == null)
                 throw new ArgumentNullException(nameof(connectionName) + " not given");
@@ -63,7 +63,7 @@ namespace SqlBulkTools
             if (_transaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            await _transaction.CommitTransactionAsync(connectionName, credentials);
+            return await _transaction.CommitTransactionAsync(connectionName, credentials);
         }
 
 
@@ -74,7 +74,7 @@ namespace SqlBulkTools
         /// <param name="connection"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public void CommitTransaction(SqlConnection connection)
+        public int CommitTransaction(SqlConnection connection)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
@@ -82,8 +82,7 @@ namespace SqlBulkTools
             if (_transaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            _transaction.CommitTransaction(connection : connection);
-
+            return _transaction.CommitTransaction(connection : connection);
         }
 
 
@@ -95,7 +94,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public async Task CommitTransactionAsync(SqlConnection connection)
+        public async Task<int> CommitTransactionAsync(SqlConnection connection)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
@@ -103,7 +102,7 @@ namespace SqlBulkTools
             if (_transaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            await _transaction.CommitTransactionAsync(connection : connection);
+            return await _transaction.CommitTransactionAsync(connection : connection);
         }
 
         /// <summary>
@@ -113,9 +112,9 @@ namespace SqlBulkTools
         /// <param name="list"></param>
         /// <returns></returns>
         [Obsolete("This method is deprecated and will be removed from a future release, please use the more user-friendly Setup<T>() instead.")]
-        public CollectionSelect<T> Setup<T>(Func<Setup<T>, CollectionSelect<T>> list)
+        public BulkForCollection<T> Setup<T>(Func<Setup<T>, BulkForCollection<T>> list)
         {
-            CollectionSelect<T> tableSelect = list(new Setup<T>(this));
+            BulkForCollection<T> tableSelect = list(new Setup<T>(this));
             return tableSelect;
         }
 

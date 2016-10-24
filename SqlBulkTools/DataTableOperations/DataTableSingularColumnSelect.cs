@@ -32,7 +32,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public DataTableSingularColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
             return this;
         }
@@ -44,7 +44,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public DataTableSingularColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
-            var propertyName = _helper.GetPropertyName(source);
+            var propertyName = BulkOperationsHelper.GetPropertyName(source);
             CustomColumnMappings.Add(propertyName, destination);
             return this;
         }
@@ -56,14 +56,14 @@ namespace SqlBulkTools
         /// <returns></returns>
         public DataTable PrepareDataTable()
         {
-            _dt = _helper.CreateDataTable<T>(_columns, CustomColumnMappings);
+            _dt = BulkOperationsHelper.CreateDataTable<T>(_columns, CustomColumnMappings);
             _ext.SetBulkExt(this, _columns, CustomColumnMappings, typeof(T));
             return _dt;
         }
 
         DataTable IDataTableTransaction.BuildDataTable()
         {
-            return _helper.ConvertListToDataTable(_dt, _list, _columns);
+            return BulkOperationsHelper.ConvertListToDataTable(_dt, _list, _columns);
         }
 
     }

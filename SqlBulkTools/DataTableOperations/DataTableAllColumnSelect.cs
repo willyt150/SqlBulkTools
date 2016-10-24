@@ -31,7 +31,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public DataTableAllColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
-            var propertyName = _helper.GetPropertyName(source);
+            var propertyName = BulkOperationsHelper.GetPropertyName(source);
             CustomColumnMappings.Add(propertyName, destination);
             return this;
         }
@@ -44,7 +44,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public DataTableAllColumnSelect<T> RemoveColumn(Expression<Func<T, object>> columnName)
         {
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             if (_columns.Contains(propertyName))
             {
                 _removedColumns.Add(propertyName);
@@ -68,13 +68,13 @@ namespace SqlBulkTools
         public DataTable PrepareDataTable()
         {
             _ext.SetBulkExt(this, _columns, CustomColumnMappings, typeof(T), _removedColumns);
-            _dt = _helper.CreateDataTable<T>(_columns, CustomColumnMappings);
+            _dt = BulkOperationsHelper.CreateDataTable<T>(_columns, CustomColumnMappings);
             return _dt;
         }
 
         DataTable IDataTableTransaction.BuildDataTable()
         {
-            return _helper.ConvertListToDataTable(_dt, _list, _columns);
+            return BulkOperationsHelper.ConvertListToDataTable(_dt, _list, _columns);
         }
 
     }

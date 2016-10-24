@@ -9,7 +9,8 @@ namespace SqlBulkTools
         internal const string TempOutputTableName = "#TmpOutput";
         internal const string SourceAlias = "Source";
         internal const string TargetAlias = "Target";
-        
+        internal const string UniqueParamIdentifier = "Condition";
+
     }
 
     internal static class IndexOperation
@@ -34,7 +35,7 @@ namespace SqlBulkTools
 
     public enum PredicateType
     {
-        Update, Delete
+        Update, Delete, Where, And, Or
     }
 #pragma warning restore 1591
 }

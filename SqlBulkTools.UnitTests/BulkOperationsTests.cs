@@ -22,10 +22,9 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId", "FK_BusinessId", "AddressId" };
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
+            var result = BulkOperationsHelper.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
 
             // Assert
             Assert.AreEqual("ON [Target].[MarketPlaceId] = [Source].[MarketPlaceId] AND [Target].[FK_BusinessId] = [Source].[FK_BusinessId] AND [Target].[AddressId] = [Source].[AddressId] ", result);
@@ -36,10 +35,9 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId", "FK_BusinessId" };
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
+            var result = BulkOperationsHelper.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
 
             // Assert
             Assert.AreEqual("ON [Target].[MarketPlaceId] = [Source].[MarketPlaceId] AND [Target].[FK_BusinessId] = [Source].[FK_BusinessId] ", result);
@@ -50,10 +48,9 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             List<string> joinOnList = new List<string>() { "MarketPlaceId" };
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
+            var result = BulkOperationsHelper.BuildJoinConditionsForUpdateOrInsert(joinOnList.ToArray(), "Source", "Target");
 
             // Assert
             Assert.AreEqual("ON [Target].[MarketPlaceId] = [Source].[MarketPlaceId] ", result);
@@ -65,11 +62,10 @@ namespace SqlBulkTools.UnitTests
             // Arrange
             var updateOrInsertColumns = GetTestColumns();
             var expected =
-                "UPDATE SET [Target].[id] = [Source].[id], [Target].[Name] = [Source].[Name], [Target].[Town] = [Source].[Town], [Target].[Email] = [Source].[Email], [Target].[IsCool] = [Source].[IsCool] ";
-            var sut = new BulkOperationsHelper();
+                "SET [Target].[id] = [Source].[id], [Target].[Name] = [Source].[Name], [Target].[Town] = [Source].[Town], [Target].[Email] = [Source].[Email], [Target].[IsCool] = [Source].[IsCool] ";
 
             // Act
-            var result = sut.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
+            var result = BulkOperationsHelper.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -84,11 +80,10 @@ namespace SqlBulkTools.UnitTests
             updateOrInsertColumns.Add("Id");
 
             var expected =
-                "UPDATE SET [Target].[Id] = [Source].[Id] ";
-            var sut = new BulkOperationsHelper();
+                "SET [Target].[Id] = [Source].[Id] ";
 
             // Act
-            var result = sut.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
+            var result = BulkOperationsHelper.BuildUpdateSet(updateOrInsertColumns, "Source", "Target", null);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -102,10 +97,9 @@ namespace SqlBulkTools.UnitTests
             var updateOrInsertColumns = GetTestColumns();
             var expected =
                 "INSERT ([Name], [Town], [Email], [IsCool]) values ([Source].[Name], [Source].[Town], [Source].[Email], [Source].[IsCool])";
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildInsertSet(updateOrInsertColumns, "Source", "id");
+            var result = BulkOperationsHelper.BuildInsertSet(updateOrInsertColumns, "Source", "id");
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -121,10 +115,9 @@ namespace SqlBulkTools.UnitTests
             var tableName = "TableName";
 
             var expected = "INSERT INTO TableName ([Id]) ";
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildInsertIntoSet(columns, null, tableName);
+            var result = BulkOperationsHelper.BuildInsertIntoSet(columns, null, tableName);
 
             // Assert
             Assert.AreEqual(result, expected);
@@ -138,10 +131,8 @@ namespace SqlBulkTools.UnitTests
             var expected =
                 "INSERT INTO TableName ([Name], [Town], [Email], [IsCool]) ";
 
-            var sut = new BulkOperationsHelper();
-
             // Act
-            var result = sut.BuildInsertIntoSet(columns, "id", tableName);
+            var result = BulkOperationsHelper.BuildInsertIntoSet(columns, "id", tableName);
 
             // Assert
             Assert.AreEqual(result, expected);
@@ -156,10 +147,9 @@ namespace SqlBulkTools.UnitTests
             updateOrInsertColumns.Add("Id");
             var expected =
                 "INSERT ([Id]) values ([Source].[Id])";
-            var sut = new BulkOperationsHelper();
 
             // Act
-            var result = sut.BuildInsertSet(updateOrInsertColumns, "Source", null);
+            var result = BulkOperationsHelper.BuildInsertSet(updateOrInsertColumns, "Source", null);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -170,11 +160,10 @@ namespace SqlBulkTools.UnitTests
         public void BulkOperationsHelpers_GetAllValueTypeAndStringColumns_ReturnsCorrectSet()
         {
             // Arrange
-            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> expected = new HashSet<string>() {"Title", "CreatedTime", "BoolTest", "IntegerTest", "Price"};
 
             // Act
-            var result = helper.GetAllValueTypeAndStringColumns(typeof (ModelWithMixedTypes));
+            var result = BulkOperationsHelper.GetAllValueTypeAndStringColumns(typeof (ModelWithMixedTypes));
 
             // Assert
             CollectionAssert.AreEqual(expected, result);
@@ -186,14 +175,13 @@ namespace SqlBulkTools.UnitTests
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]'; EXEC(@sql);";
-            BulkOperationsHelper helper = new BulkOperationsHelper();
             var databaseName = "SqlBulkTools";
 
             var sqlConnMock = new Mock<IDbConnection>();
             sqlConnMock.Setup(x => x.Database).Returns(databaseName);
 
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, null, true);
+            string result = BulkOperationsHelper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, null, true);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -206,7 +194,6 @@ namespace SqlBulkTools.UnitTests
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]' AND sys.indexes.name = 'IX_Title'; EXEC(@sql);";
-            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
             var databaseName = "SqlBulkTools";
@@ -215,7 +202,7 @@ namespace SqlBulkTools.UnitTests
             sqlConnMock.Setup(x => x.Database).Returns(databaseName);
 
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
+            string result = BulkOperationsHelper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -227,10 +214,9 @@ namespace SqlBulkTools.UnitTests
         {
             // Arrange
             string expected = "[db].[CustomSchemaName].[TableName]";
-            BulkOperationsHelper helper = new BulkOperationsHelper();
 
             // Act
-            string result = helper.GetFullQualifyingTableName("db", "CustomSchemaName", "TableName");
+            string result = BulkOperationsHelper.GetFullQualifyingTableName("db", "CustomSchemaName", "TableName");
 
             // Act
             Assert.AreEqual(expected, result);
@@ -242,7 +228,6 @@ namespace SqlBulkTools.UnitTests
             // Arrange
             string expected =
                 @"DECLARE @sql AS VARCHAR(MAX)=''; SELECT @sql = @sql + 'ALTER INDEX ' + sys.indexes.name + ' ON ' + sys.objects.name + ' DISABLE;' FROM sys.indexes JOIN sys.objects ON sys.indexes.object_id = sys.objects.object_id WHERE sys.indexes.type_desc = 'NONCLUSTERED' AND sys.objects.type_desc = 'USER_TABLE' AND sys.objects.name = '[SqlBulkTools].[dbo].[Books]' AND sys.indexes.name = 'IX_Title' AND sys.indexes.name = 'IX_Price'; EXEC(@sql);";
-            BulkOperationsHelper helper = new BulkOperationsHelper();
             HashSet<string> indexes = new HashSet<string>();
             indexes.Add("IX_Title");
             indexes.Add("IX_Price");
@@ -253,7 +238,7 @@ namespace SqlBulkTools.UnitTests
             sqlConnMock.Setup(x => x.Database).Returns(databaseName);
 
             // Act
-            string result = helper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
+            string result = BulkOperationsHelper.GetIndexManagementCmd(IndexOperation.Disable, "Books", "dbo", sqlConnMock.Object, indexes);
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -264,11 +249,10 @@ namespace SqlBulkTools.UnitTests
         public void BulkOperationsHelper_GetDropTmpTableCmd_ReturnsCorrectCmd()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var expected = "DROP TABLE #TmpOutput;";
 
             // Act
-            var result = helper.GetDropTmpTableCmd();
+            var result = BulkOperationsHelper.GetDropTmpTableCmd();
 
             // Assert
             Assert.AreEqual(expected, result);
@@ -276,10 +260,9 @@ namespace SqlBulkTools.UnitTests
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanDecimalCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThanDecimalCondition()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] {"stub"};
             var conditions = new List<Condition>()
@@ -289,24 +272,24 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.LessThan,
                     LeftName = "Price",
                     Value = "50",
-                    ValueType = typeof (decimal)
+                    ValueType = typeof (decimal),
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[Price] < @Price ";
+            var expected = "AND [Target].[Price] < @PriceCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNullCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_IsNullCondition()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -322,17 +305,16 @@ namespace SqlBulkTools.UnitTests
             var expected = "AND [Target].[Description] IS NULL ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_IsNotNullCondition()
+        public void BulkOperationsHelper_BuildPredicateQuery_IsNotNullCondition()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -348,17 +330,16 @@ namespace SqlBulkTools.UnitTests
             var expected = "AND [Target].[Description] IS NOT NULL ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThan()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThan()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -368,23 +349,23 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.LessThan,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[Description] < @Description ";
+            var expected = "AND [Target].[Description] < @DescriptionCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_LessThanOrEqualTo()
+        public void BulkOperationsHelper_BuildPredicateQuery_LessThanOrEqualTo()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -394,23 +375,23 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.LessThanOrEqual,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[Description] <= @Description ";
+            var expected = "AND [Target].[Description] <= @DescriptionCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThan()
+        public void BulkOperationsHelper_BuildPredicateQuery_GreaterThan()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -420,23 +401,23 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.GreaterThan,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[Description] > @Description ";
+            var expected = "AND [Target].[Description] > @DescriptionCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_GreaterThanOrEqualTo()
+        public void BulkOperationsHelper_BuildPredicateQuery_GreaterThanOrEqualTo()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -446,23 +427,23 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.GreaterThanOrEqual,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[Description] >= @Description ";
+            var expected = "AND [Target].[Description] >= @DescriptionCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_CustomColumnMapping()
+        public void BulkOperationsHelper_BuildPredicateQuery_CustomColumnMapping()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -472,24 +453,24 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.GreaterThanOrEqual,
                     LeftName = "Description",
                     Value = "null",
-                    CustomColumnMapping = "ShortDescription"
+                    CustomColumnMapping = "ShortDescription",
+                    SortOrder = 1
                 }
             };
 
-            var expected = "AND [Target].[ShortDescription] >= @Description ";
+            var expected = "AND [Target].[ShortDescription] >= @DescriptionCondition1 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_MultipleConditions()
+        public void BulkOperationsHelper_BuildPredicateQuery_MultipleConditions()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn = new[] { "stub" };
             var conditions = new List<Condition>()
@@ -499,30 +480,31 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.NotEqual,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 },
                 new Condition()
                 {
                     Expression = ExpressionType.GreaterThanOrEqual,
                     LeftName = "Price",
                     Value = "50",
-                    ValueType = typeof(decimal)
+                    ValueType = typeof(decimal),
+                    SortOrder = 2
                 },
             };
 
-            var expected = "AND [Target].[Description] IS NOT NULL AND [Target].[Price] >= @Price ";
+            var expected = "AND [Target].[Description] IS NOT NULL AND [Target].[Price] >= @PriceCondition2 ";
 
             // Act
-            var result = helper.BuildPredicateQuery(updateOn, conditions, targetAlias);
+            var result = BulkOperationsHelper.BuildPredicateQuery(updateOn, conditions, targetAlias);
 
             // Assert
             Assert.AreEqual(expected, result);
         }
 
         [Test]
-        public void BulkOperationsHelper_BuildConditionsForPredicate_ThrowsWhenUpdateOnColIsEmpty()
+        public void BulkOperationsHelper_BuildPredicateQuery_ThrowsWhenUpdateOnColIsEmpty()
         {
             // Arrange
-            var helper = new BulkOperationsHelper();
             var targetAlias = "Target";
             var updateOn1 = new string[0];
 
@@ -533,18 +515,42 @@ namespace SqlBulkTools.UnitTests
                     Expression = ExpressionType.NotEqual,
                     LeftName = "Description",
                     Value = "null",
+                    SortOrder = 1
                 },
                 new Condition()
                 {
                     Expression = ExpressionType.GreaterThanOrEqual,
                     LeftName = "Price",
                     Value = "50",
-                    ValueType = typeof(decimal)
+                    ValueType = typeof(decimal),
+                    SortOrder = 2
                 },
             };
 
-            Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(updateOn1, conditions, targetAlias));
-            Assert.Throws<SqlBulkToolsException>(() => helper.BuildPredicateQuery(null, conditions, targetAlias));
+            Assert.Throws<SqlBulkToolsException>(() => BulkOperationsHelper.BuildPredicateQuery(updateOn1, conditions, targetAlias));
+            Assert.Throws<SqlBulkToolsException>(() => BulkOperationsHelper.BuildPredicateQuery(null, conditions, targetAlias));
+        }
+
+        [Test]
+        public void BulkOperationsHelper_AddSqlParamsForUpdateQuery_GetsTypeAndValue()
+        {
+            Book book = new Book()
+            {
+                ISBN = "Some ISBN",
+                Price = 23.99M,
+                BestSeller = true
+            };
+
+            HashSet<string> columns = new HashSet<string>();
+            columns.Add("ISBN");
+            columns.Add("Price");
+            columns.Add("BestSeller");
+
+            List<SqlParameter> sqlParams = new List<SqlParameter>();
+
+            BulkOperationsHelper.AddSqlParamsForUpdateQuery(sqlParams, columns, book);
+
+            Assert.AreEqual(3, sqlParams.Count);
         }
 
         private HashSet<string> GetTestColumns()

@@ -780,7 +780,7 @@ namespace SqlBulkTools.IntegrationTests
             BulkOperations bulk = new BulkOperations();
 
             _bookCollection = _randomizer.GetRandomCollection(30);
-
+                
             bulk.Setup()
             .ForCollection(
                 _bookCollection.Select(
@@ -965,6 +965,7 @@ namespace SqlBulkTools.IntegrationTests
                 .MatchTargetOn(x => x.ISBN)
                 .SetIdentityColumn(x => x.Id)
                 .UpdateWhen(x => x.WarehouseId == 1);
+
 
             bulk.CommitTransaction("SqlBulkToolsTest");
 

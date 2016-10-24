@@ -15,7 +15,6 @@ namespace SqlBulkTools
         private HashSet<string> _removedColumns; 
         private Dictionary<string, string> _customColumnMappings;
         private IDataTableTransaction _dataTableTransaction;
-        private readonly BulkOperationsHelper _helper;
         private Type _expectedType;
 
 
@@ -24,7 +23,6 @@ namespace SqlBulkTools
         /// </summary>
         public DataTableOperations()
         {
-            _helper = new BulkOperationsHelper();
             _expectedType = null;
         }
 
@@ -73,7 +71,7 @@ namespace SqlBulkTools
 
             this.CheckType(typeof(T));
             this.CheckSetup();          
-            var propertyName = _helper.GetPropertyName(columnName);
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
 
             this.CheckRemovedColumns(propertyName);
 

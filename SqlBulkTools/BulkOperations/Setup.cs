@@ -24,9 +24,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public CollectionSelect<T> ForCollection<T>(IEnumerable<T> list)
+        public BulkForCollection<T> ForCollection<T>(IEnumerable<T> list)
         {
-            return new CollectionSelect<T>(list, _ext);
+            return new BulkForCollection<T>(list, _ext);
         }
     }
 
@@ -48,13 +48,33 @@ namespace SqlBulkTools
         }
 
         /// <summary>
+        /// Use this option for simple updates or deletes where you are only dealing with a single table 
+        /// and conditions are not complex. For anything more advanced, use a stored procedure.  
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public UpdateQueryObject<T> ForSimpleUpdateQuery(T entity)
+        {
+            return new UpdateQueryObject<T>(entity, _ext);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public DeleteQueryObject<T> ForSimpleDeleteQuery()
+        {
+            return new DeleteQueryObject<T>(_ext);
+        }
+
+        /// <summary>
         /// Represents the collection of objects to be inserted/upserted/updated/deleted (configured in next steps). 
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public CollectionSelect<T> ForCollection(IEnumerable<T> list)
+        public BulkForCollection<T> ForCollection(IEnumerable<T> list)
         {
-            return new CollectionSelect<T>(list, _ext);
+            return new BulkForCollection<T>(list, _ext);
         }
     }
 }

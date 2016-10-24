@@ -15,7 +15,6 @@ namespace SqlBulkTools
         protected DataTableOperations _ext;
         protected IEnumerable<T> _list;
         protected Dictionary<string, string> CustomColumnMappings { get; set; }
-        internal BulkOperationsHelper _helper;
         protected HashSet<string> _columns;
         protected DataTable _dt;
         #pragma warning restore CS1591 // Missing XML comment for publicly visible type or member   
@@ -24,9 +23,7 @@ namespace SqlBulkTools
         /// 
         /// </summary>
         protected DataTableAbstractColumnSelect(DataTableOperations ext, IEnumerable<T> list, HashSet<string> columns)
-        {
-            _helper = new BulkOperationsHelper();
-            
+        {            
             CustomColumnMappings = new Dictionary<string, string>();
             _dt = null;
             _ext = ext;
