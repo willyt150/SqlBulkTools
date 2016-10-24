@@ -1040,14 +1040,8 @@ namespace SqlBulkTools
 
             BinaryExpression binaryBody = predicate.Body as BinaryExpression;
 
-            if (binaryBody == null && (predicate.Body.Type == typeof(bool) || predicate.Body.Type == typeof(bool?)))
-            {
-                throw new SqlBulkToolsException($"Expression not supported for {GetPredicateMethodName(predicateType)}. For " +
-                                                $"comparing boolean values, use the fully qualified syntax e.g. 'condition == true'");
-            }
-
             if (binaryBody == null)
-                throw new SqlBulkToolsException($"Expression not supported for {GetPredicateMethodName(predicateType)}.");
+                throw new SqlBulkToolsException($"Expression not supported for {GetPredicateMethodName(predicateType)}");
 
             // For expression types Equal and NotEqual, it's possible for user to pass null value. This handles the null use case. 
             // SqlParameter is not added when comparison to null value is used. 
@@ -1198,7 +1192,14 @@ namespace SqlBulkTools
             return predicateType == PredicateType.Update
                 ? "UpdateWhen(...)"
                 : predicateType == PredicateType.Delete ?
-                "DeleteWhen(...)" : string.Empty;
+                "DeleteWhen(...)"
+                : predicateType == PredicateType.Where ? 
+                "Where(...)"
+                : predicateType == PredicateType.And ?
+                "And(...)"
+                : predicateType == PredicateType.Or ?
+                "Or(...)"
+                : string.Empty;
         }
 
         /// <summary>
