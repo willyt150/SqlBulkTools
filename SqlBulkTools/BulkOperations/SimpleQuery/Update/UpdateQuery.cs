@@ -59,7 +59,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="expression"></param>
         /// <returns></returns>
-        public UpdateQueryWhere<T> Where(Expression<Func<T, bool>> expression)
+        public UpdateQueryReady<T> Where(Expression<Func<T, bool>> expression)
         {
             // _whereConditions list will only ever contain one element.
             BulkOperationsHelper.AddPredicate(expression, PredicateType.Where, _whereConditions, _parameters, 
@@ -67,7 +67,7 @@ namespace SqlBulkTools
 
             _conditionSortOrder++;
 
-            return new UpdateQueryWhere<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
+            return new UpdateQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
                 _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters);
         }
 

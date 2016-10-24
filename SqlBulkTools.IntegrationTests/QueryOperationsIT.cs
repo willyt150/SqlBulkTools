@@ -61,19 +61,49 @@ namespace SqlBulkTools.IntegrationTests
             // Update price to 100
 
             bulk.Setup<Book>()
-                .ForSimpleQuery(new Book() {ISBN = isbn, Price = 100})
+                .ForSimpleUpdateQuery(new Book(){Price = 100})
                 .WithTable("Books")
                 .AddColumn(x => x.Price)
                 .Update()
                 .Where(x => x.ISBN == isbn);
             
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+            int updatedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
 
+            Assert.IsTrue(updatedRecords == 1);
             Assert.AreEqual(100, _db.Books.Single(x => x.ISBN == isbn).Price);
         }
 
+        [Test]
+        public void SqlBulkTools_DeleteQuery_DeleteSingleEntity()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
 
+            List<Book> books = _randomizer.GetRandomCollection(30);
+
+            var bookIsbn = books[5].ISBN;
+
+            bulk.Setup<Book>()
+                .ForCollection(books)
+                .WithTable("Books")
+                .AddAllColumns()
+                .BulkInsert();
+
+            bulk.CommitTransaction("SqlBulkToolsTest");
+
+            bulk.Setup<Book>()
+                .ForSimpleDeleteQuery()
+                .WithTable("Books")
+                .Delete()
+                .Where(x => x.ISBN == bookIsbn);
+
+            int deletedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.IsTrue(deletedRecords == 1);
+            Assert.AreEqual(29, _db.Books.Count());
+        }
 
     }
 }

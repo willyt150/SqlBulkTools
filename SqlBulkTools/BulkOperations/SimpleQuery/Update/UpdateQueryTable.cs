@@ -44,11 +44,11 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public QueryColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public UpdateQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new QueryColumnSelect<T>(_singleEntity, _tableName, Columns, _schema, 
+            return new UpdateQueryAddColumn<T>(_singleEntity, _tableName, Columns, _schema, 
                 _sqlTimeout, _ext);
         }
 

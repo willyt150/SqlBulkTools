@@ -13,9 +13,8 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpdateQueryWhere<T> : ITransaction
+    public class DeleteQueryReady<T> : ITransaction
     {
-        private readonly T _singleEntity;
         private readonly string _tableName;
         private readonly string _schema;
         private readonly HashSet<string> _columns;
@@ -31,33 +30,26 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="singleEntity"></param>
         /// <param name="tableName"></param>
         /// <param name="schema"></param>
-        /// <param name="columns"></param>
-        /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         /// <param name="conditionSortOrder"></param>
         /// <param name="whereConditions"></param>
         /// <param name="parameters"></param>
-        public UpdateQueryWhere(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
+        public DeleteQueryReady(string tableName, string schema, 
             int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> parameters)
         {
-            _singleEntity = singleEntity;
             _tableName = tableName;
             _schema = schema;
-            _columns = columns;
-            _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _conditionSortOrder = conditionSortOrder;
             _ext.SetBulkExt(this);
-            _whereConditions = whereConditions;  
+            _whereConditions = whereConditions;
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
+            _conditionSortOrder = conditionSortOrder;
             _parameters = parameters;
-
         }
 
 
@@ -67,9 +59,10 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryWhere<T> And(Expression<Func<T, bool>> expression)
+        public DeleteQueryReady<T> And(Expression<Func<T, bool>> expression)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, 
+                _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
@@ -80,27 +73,16 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryWhere<T> Or(Expression<Func<T, bool>> expression)
+        public DeleteQueryReady<T> Or(Expression<Func<T, bool>> expression)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, 
+                _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
-            int affectedRows = 0;
-            if (_singleEntity == null)
-            {
-                return affectedRows;
-            }
-
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
-
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
             
 
@@ -120,8 +102,7 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
+                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
                                       $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;
@@ -131,7 +112,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        affectedRows = command.ExecuteNonQuery();
+                        int affectedRows = command.ExecuteNonQuery();
                         transaction.Commit();
 
                         return affectedRows;
@@ -153,20 +134,7 @@ namespace SqlBulkTools
 
         async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
-            int affectedRows = 0;
-            if (_singleEntity == null)
-            {
-                return affectedRows;
-            }
-
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForUpdateQuery(_parameters, _columns, _singleEntity);
-
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -184,8 +152,7 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
+                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
                                       $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;
@@ -195,7 +162,7 @@ namespace SqlBulkTools
                             command.Parameters.AddRange(_parameters.ToArray());
                         }
 
-                        affectedRows = await command.ExecuteNonQueryAsync();
+                        int affectedRows = await command.ExecuteNonQueryAsync();
                         transaction.Commit();
 
                         return affectedRows;

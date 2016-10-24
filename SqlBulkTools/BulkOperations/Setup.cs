@@ -24,22 +24,10 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public CollectionSelect<T> ForCollection<T>(IEnumerable<T> list)
+        public AddCollection<T> ForCollection<T>(IEnumerable<T> list)
         {
-            return new CollectionSelect<T>(list, _ext);
+            return new AddCollection<T>(list, _ext);
         }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entityRepresentation"></param>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public QueryObject<T> ForBasicQuery<T>(T entityRepresentation)
-        {
-            return new QueryObject<T>(entityRepresentation, _ext);
-        }
-
     }
 
     /// <summary>
@@ -65,9 +53,18 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public QueryObject<T> ForSimpleQuery(T entity)
+        public UpdateQueryObject<T> ForSimpleUpdateQuery(T entity)
         {
-            return new QueryObject<T>(entity, _ext);
+            return new UpdateQueryObject<T>(entity, _ext);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public DeleteQueryObject<T> ForSimpleDeleteQuery()
+        {
+            return new DeleteQueryObject<T>(_ext);
         }
 
         /// <summary>
@@ -75,9 +72,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public CollectionSelect<T> ForCollection(IEnumerable<T> list)
+        public AddCollection<T> ForCollection(IEnumerable<T> list)
         {
-            return new CollectionSelect<T>(list, _ext);
+            return new AddCollection<T>(list, _ext);
         }
     }
 }

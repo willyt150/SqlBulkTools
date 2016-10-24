@@ -1,29 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
+using SqlBulkTools.BulkCopy;
 
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     /// <summary>
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class QueryObject<T>
+    public class AddCollection<T>
     {
-        private readonly T _singleEntity;
+        private readonly IEnumerable<T> _list;
         private readonly BulkOperations _ext;
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="singleEntity"></param>
+        /// <param name="list"></param>
         /// <param name="ext"></param>
-        public QueryObject(T singleEntity, BulkOperations ext)
+        public AddCollection(IEnumerable<T> list, BulkOperations ext)
         {
+            _list = list;
             _ext = ext;
-            _singleEntity = singleEntity;
         }
 
         /// <summary>
@@ -31,9 +29,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="tableName">Name of the table.</param>
         /// <returns></returns>
-        public QueryTable<T> WithTable(string tableName)
+        public BulkCopyTable<T> WithTable(string tableName)
         {
-            return new QueryTable<T>(_singleEntity, tableName, _ext);
+            return new BulkCopyTable<T>(_list, tableName, _ext);
         }
     }
 }

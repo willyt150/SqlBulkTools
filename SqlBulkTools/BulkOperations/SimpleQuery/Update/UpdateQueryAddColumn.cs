@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class QueryColumnSelect<T>
+    public class UpdateQueryAddColumn<T>
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -30,7 +30,7 @@ namespace SqlBulkTools
         /// <param name="schema"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        public QueryColumnSelect(T singleEntity, string tableName, HashSet<string> columns, string schema,
+        public UpdateQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, BulkOperations ext)
         {
             _singleEntity = singleEntity;
@@ -48,7 +48,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public QueryColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public UpdateQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
@@ -65,6 +65,15 @@ namespace SqlBulkTools
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        //public DeleteQuery<T> Delete()
+        //{
+        //    return new DeleteQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext);
+        //} 
+
+        /// <summary>
         /// By default SqlBulkTools will attempt to match the model property names to SQL column names (case insensitive). 
         /// If any of your model property names do not match 
         /// the SQL table column(s) as defined in given table, then use this method to set up a custom mapping.  
@@ -76,7 +85,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public QueryColumnSelect<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public UpdateQueryAddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);

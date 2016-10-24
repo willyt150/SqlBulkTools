@@ -13,7 +13,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class DeleteQueryWhere<T> : ITransaction
+    public class UpdateQueryReady<T> : ITransaction
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -41,7 +41,7 @@ namespace SqlBulkTools
         /// <param name="conditionSortOrder"></param>
         /// <param name="whereConditions"></param>
         /// <param name="parameters"></param>
-        public DeleteQueryWhere(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings,
+        public UpdateQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
             int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> parameters)
         {
             _singleEntity = singleEntity;
@@ -51,12 +51,13 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
+            _conditionSortOrder = conditionSortOrder;
             _ext.SetBulkExt(this);
-            _whereConditions = whereConditions;
+            _whereConditions = whereConditions;  
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
-            _conditionSortOrder = conditionSortOrder;
             _parameters = parameters;
+
         }
 
 
@@ -66,9 +67,9 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public DeleteQueryWhere<T> And(Expression<Func<T, bool>> expression)
+        public UpdateQueryReady<T> And(Expression<Func<T, bool>> expression)
         {
-
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
@@ -79,9 +80,9 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public DeleteQueryWhere<T> Or(Expression<Func<T, bool>> expression)
+        public UpdateQueryReady<T> Or(Expression<Func<T, bool>> expression)
         {
-
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
@@ -119,7 +120,8 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
-                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
+                        string comm = $"UPDATE {fullQualifiedTableName} " +
+                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
                                       $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;
@@ -182,7 +184,8 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
-                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
+                        string comm = $"UPDATE {fullQualifiedTableName} " +
+                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, fullQualifiedTableName)}" +
                                       $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
 
                         command.CommandText = comm;

@@ -12,7 +12,7 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public abstract class AbstractColumnSelect<T>
+    public abstract class AbstractColumnSelection<T>
     {
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
         // ReSharper disable InconsistentNaming
@@ -48,7 +48,7 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="bulkCopyDelegates"></param>
-        protected AbstractColumnSelect(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
+        protected AbstractColumnSelection(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {

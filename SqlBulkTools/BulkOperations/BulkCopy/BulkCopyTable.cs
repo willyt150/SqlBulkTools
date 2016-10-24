@@ -56,11 +56,11 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public ColumnSelect<T> AddColumn(Expression<Func<T, object>> columnName)
+        public AddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new ColumnSelect<T>(_list, _tableName, Columns, _schema, 
+            return new AddColumn<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
@@ -68,10 +68,10 @@ namespace SqlBulkTools.BulkCopy
         /// Adds all properties in model that are either value, string, char[] or byte[] type. 
         /// </summary>
         /// <returns></returns>
-        public AllColumnSelect<T> AddAllColumns()
+        public AddColumnList<T> AddAllColumns()
         {
             Columns = BulkOperationsHelper.GetAllValueTypeAndStringColumns(typeof(T));
-            return new AllColumnSelect<T>(_list, _tableName, Columns, _schema, 
+            return new AddColumnList<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
