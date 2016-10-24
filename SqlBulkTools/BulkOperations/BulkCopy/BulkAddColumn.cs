@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class AddColumn<T> : AbstractColumnSelection<T>
+    public class BulkAddColumn<T> : AbstractColumnSelection<T>
     {
         /// <summary>
         /// 
@@ -27,7 +27,7 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="bulkCopyDelegates"></param>
-        public AddColumn(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
+        public BulkAddColumn(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions,
             BulkOperations ext, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) :
             base(list, tableName, columns, schema, sqlTimeout, bulkCopyTimeout, bulkCopyEnableStreaming, bulkCopyNotifyAfter, bulkCopyBatchSize, sqlBulkCopyOptions, ext, bulkCopyDelegates)
@@ -41,7 +41,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public AddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
+        public BulkAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
@@ -60,7 +60,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public AddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public BulkAddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
@@ -73,7 +73,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="indexName"></param>
         /// <returns></returns>
-        public AddColumn<T> AddTmpDisableNonClusteredIndex(string indexName)
+        public BulkAddColumn<T> AddTmpDisableNonClusteredIndex(string indexName)
         {
             if (indexName == null)
                 throw new ArgumentNullException(nameof(indexName));
@@ -89,7 +89,7 @@ namespace SqlBulkTools
         /// consequences before using this option.  
         /// </summary>
         /// <returns></returns>
-        public AddColumn<T> TmpDisableAllNonClusteredIndexes()
+        public BulkAddColumn<T> TmpDisableAllNonClusteredIndexes()
         {
             _disableAllIndexes = true;
             return this;

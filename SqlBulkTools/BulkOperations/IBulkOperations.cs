@@ -41,7 +41,7 @@ namespace SqlBulkTools
         /// <param name="list"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        AddCollection<T> Setup<T>(Func<Setup<T>, AddCollection<T>> list);
+        BulkForCollection<T> Setup<T>(Func<Setup<T>, BulkForCollection<T>> list);
 
         /// <summary>
         /// 

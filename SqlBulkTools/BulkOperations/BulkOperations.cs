@@ -112,9 +112,9 @@ namespace SqlBulkTools
         /// <param name="list"></param>
         /// <returns></returns>
         [Obsolete("This method is deprecated and will be removed from a future release, please use the more user-friendly Setup<T>() instead.")]
-        public AddCollection<T> Setup<T>(Func<Setup<T>, AddCollection<T>> list)
+        public BulkForCollection<T> Setup<T>(Func<Setup<T>, BulkForCollection<T>> list)
         {
-            AddCollection<T> tableSelect = list(new Setup<T>(this));
+            BulkForCollection<T> tableSelect = list(new Setup<T>(this));
             return tableSelect;
         }
 

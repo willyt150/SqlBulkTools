@@ -47,7 +47,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BulkOperations\BulkCopy\AbstractColumnSelect.cs" />
+    <Compile Include="BulkOperations\BulkCopy\AbstractColumnSelection.cs" />
     <Compile Include="BulkOperations\BulkCopy\AbstractOperation.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQuery.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryReady.cs" />
@@ -64,14 +64,14 @@
     <Compile Include="DataTableOperations\DataTableAbstractColumnSelect.cs" />
     <Compile Include="DataTableOperations\DataTableOperations.cs" />
     <Compile Include="DataTableOperations\DataTableAllColumnSelect.cs" />
-    <Compile Include="BulkOperations\BulkCopy\AllColumnSelect.cs" />
+    <Compile Include="BulkOperations\BulkCopy\AddColumnList.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkDelete.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkInsert.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkInsertOrUpdate.cs" />
     <Compile Include="Helper\BulkOperationsHelper.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkUpdate.cs" />
     <Compile Include="DataTableOperations\DataTableSingularColumnSelect.cs" />
-    <Compile Include="BulkOperations\BulkCopy\ColumnSelect.cs" />
+    <Compile Include="BulkOperations\BulkCopy\AddSingleColumn.cs" />
     <Compile Include="Helper\Constants.cs" />
     <Compile Include="DataTableOperations\DataTableColumns.cs" />
     <Compile Include="DataTableOperations\IDataTableOperations.cs" />
@@ -84,7 +84,7 @@
     <Compile Include="BulkOperations\Setup.cs" />
     <Compile Include="BulkOperations\BulkOperations.cs" />
     <Compile Include="Exception\SqlBulkToolsException.cs" />
-    <Compile Include="BulkOperations\BulkCopy\CollectionSelect.cs" />
+    <Compile Include="BulkOperations\BulkCopy\BulkForCollection.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

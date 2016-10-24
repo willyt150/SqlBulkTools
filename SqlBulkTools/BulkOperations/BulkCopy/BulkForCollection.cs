@@ -8,7 +8,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class AddCollection<T>
+    public class BulkForCollection<T>
     {
         private readonly IEnumerable<T> _list;
         private readonly BulkOperations _ext;
@@ -18,7 +18,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <param name="ext"></param>
-        public AddCollection(IEnumerable<T> list, BulkOperations ext)
+        public BulkForCollection(IEnumerable<T> list, BulkOperations ext)
         {
             _list = list;
             _ext = ext;
@@ -29,9 +29,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="tableName">Name of the table.</param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithTable(string tableName)
+        public BulkTable<T> WithTable(string tableName)
         {
-            return new BulkCopyTable<T>(_list, tableName, _ext);
+            return new BulkTable<T>(_list, tableName, _ext);
         }
     }
 }

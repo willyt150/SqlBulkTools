@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class AddColumnList<T> : AbstractColumnSelection<T>
+    public class BulkAddColumnList<T> : AbstractColumnSelection<T>
     {
         /// <summary>
         /// 
@@ -27,7 +27,7 @@ namespace SqlBulkTools
         /// <param name="sqlBulkCopyOptions"></param>
         /// <param name="ext"></param>
         /// <param name="bulkCopyDelegates"></param>
-        public AddColumnList(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
+        public BulkAddColumnList(IEnumerable<T> list, string tableName, HashSet<string> columns, string schema,
             int sqlTimeout, int bulkCopyTimeout, bool bulkCopyEnableStreaming, int? bulkCopyNotifyAfter, 
             int? bulkCopyBatchSize, SqlBulkCopyOptions sqlBulkCopyOptions, BulkOperations ext, 
             IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates) 
@@ -50,7 +50,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public AddColumnList<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public BulkAddColumnList<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);
@@ -63,7 +63,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="indexName"></param>
         /// <returns></returns>
-        public AddColumnList<T> AddTmpDisableNonClusteredIndex(string indexName)
+        public BulkAddColumnList<T> AddTmpDisableNonClusteredIndex(string indexName)
         {
             if (indexName == null)
                 throw new ArgumentNullException(nameof(indexName));
@@ -79,7 +79,7 @@ namespace SqlBulkTools
         /// consequences before using this option.  
         /// </summary>
         /// <returns></returns>
-        public AddColumnList<T> TmpDisableAllNonClusteredIndexes()
+        public BulkAddColumnList<T> TmpDisableAllNonClusteredIndexes()
         {
             _disableAllIndexes = true;
             return this;
@@ -91,7 +91,7 @@ namespace SqlBulkTools
         /// <param name="columnName"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public AddColumnList<T> RemoveColumn(Expression<Func<T, object>> columnName)
+        public BulkAddColumnList<T> RemoveColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             if (_columns.Contains(propertyName))

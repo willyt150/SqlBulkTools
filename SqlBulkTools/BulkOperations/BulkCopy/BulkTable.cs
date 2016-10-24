@@ -10,7 +10,7 @@ namespace SqlBulkTools.BulkCopy
     /// Configurable options for table. 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class BulkCopyTable<T>
+    public class BulkTable<T>
     {
         private readonly IEnumerable<T> _list;
         private int _bulkCopyTimeout;
@@ -32,7 +32,7 @@ namespace SqlBulkTools.BulkCopy
         /// <param name="list"></param>
         /// <param name="tableName"></param>
         /// <param name="ext"></param>
-        public BulkCopyTable(IEnumerable<T> list, string tableName, BulkOperations ext)
+        public BulkTable(IEnumerable<T> list, string tableName, BulkOperations ext)
         {
             _bulkCopyBatchSize = null;
             _bulkCopyNotifyAfter = null;
@@ -56,11 +56,11 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public AddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
+        public BulkAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new AddColumn<T>(_list, _tableName, Columns, _schema, 
+            return new BulkAddColumn<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
@@ -68,10 +68,10 @@ namespace SqlBulkTools.BulkCopy
         /// Adds all properties in model that are either value, string, char[] or byte[] type. 
         /// </summary>
         /// <returns></returns>
-        public AddColumnList<T> AddAllColumns()
+        public BulkAddColumnList<T> AddAllColumns()
         {
             Columns = BulkOperationsHelper.GetAllValueTypeAndStringColumns(typeof(T));
-            return new AddColumnList<T>(_list, _tableName, Columns, _schema, 
+            return new BulkAddColumnList<T>(_list, _tableName, Columns, _schema, 
                 _sqlTimeout, _bulkCopyTimeout, _bulkCopyEnableStreaming, _bulkCopyNotifyAfter, _bulkCopyBatchSize, _sqlBulkCopyOptions, _ext, _bulkCopyDelegates);
         }
 
@@ -81,7 +81,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="schema"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithSchema(string schema)
+        public BulkTable<T> WithSchema(string schema)
         {
             _schema = schema;
             return this;
@@ -92,7 +92,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="seconds"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithSqlCommandTimeout(int seconds)
+        public BulkTable<T> WithSqlCommandTimeout(int seconds)
         {
             _sqlTimeout = seconds;
             return this;
@@ -103,7 +103,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="seconds"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithBulkCopyCommandTimeout(int seconds)
+        public BulkTable<T> WithBulkCopyCommandTimeout(int seconds)
         {
             _bulkCopyTimeout = seconds;
             return this;
@@ -114,7 +114,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="status"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithBulkCopyEnableStreaming(bool status)
+        public BulkTable<T> WithBulkCopyEnableStreaming(bool status)
         {
             _bulkCopyEnableStreaming = status;
             return this;
@@ -126,7 +126,7 @@ namespace SqlBulkTools.BulkCopy
         /// <param name="rows"></param>
         /// <param name="bulkCopyDelegates"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithBulkCopyNotifyAfter(int rows, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
+        public BulkTable<T> WithBulkCopyNotifyAfter(int rows, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
             _bulkCopyNotifyAfter = rows;
             _bulkCopyDelegates = bulkCopyDelegates;
@@ -138,7 +138,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="rows"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithBulkCopyBatchSize(int rows)
+        public BulkTable<T> WithBulkCopyBatchSize(int rows)
         {
             _bulkCopyBatchSize = rows;
             return this;
@@ -150,7 +150,7 @@ namespace SqlBulkTools.BulkCopy
         /// </summary>
         /// <param name="options"></param>
         /// <returns></returns>
-        public BulkCopyTable<T> WithSqlBulkCopyOptions(SqlBulkCopyOptions options)
+        public BulkTable<T> WithSqlBulkCopyOptions(SqlBulkCopyOptions options)
         {           
             _sqlBulkCopyOptions = options;
             return this;

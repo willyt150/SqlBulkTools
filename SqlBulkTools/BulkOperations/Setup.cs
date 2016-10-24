@@ -24,9 +24,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public AddCollection<T> ForCollection<T>(IEnumerable<T> list)
+        public BulkForCollection<T> ForCollection<T>(IEnumerable<T> list)
         {
-            return new AddCollection<T>(list, _ext);
+            return new BulkForCollection<T>(list, _ext);
         }
     }
 
@@ -72,9 +72,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="list"></param>
         /// <returns></returns>
-        public AddCollection<T> ForCollection(IEnumerable<T> list)
+        public BulkForCollection<T> ForCollection(IEnumerable<T> list)
         {
-            return new AddCollection<T>(list, _ext);
+            return new BulkForCollection<T>(list, _ext);
         }
     }
 }
