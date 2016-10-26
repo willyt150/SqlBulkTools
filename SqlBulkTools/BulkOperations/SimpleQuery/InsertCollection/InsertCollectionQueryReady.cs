@@ -89,7 +89,7 @@ namespace SqlBulkTools
         public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount++);
         }
 
         /// <summary>
@@ -101,7 +101,7 @@ namespace SqlBulkTools
         public InsertQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount++);
         }
 
         private string GetQuery()

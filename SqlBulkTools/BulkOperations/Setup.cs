@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.SqlClient;
 using System.Security.Principal;
 
@@ -68,6 +69,16 @@ namespace SqlBulkTools
             return new UpdateQueryObject<T>(entity, _ext, _transactionCount, _concatTrans, _sqlParams);
         }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="smallCollection"></param>
+        /// <returns></returns>
+        public UpdateCollectionQueryObject<T> ForSimpleUpdateQuery(DataTable smallCollection)
+        {
+            return new UpdateCollectionQueryObject<T>(smallCollection, _ext, _transactionCount, _concatTrans, _sqlParams);
+        }
 
         /// <summary>
         /// 

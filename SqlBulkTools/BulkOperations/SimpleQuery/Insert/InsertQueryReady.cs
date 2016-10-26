@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -89,7 +90,19 @@ namespace SqlBulkTools
         public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="smallCollection"></param>
+        /// <typeparam name="T2"></typeparam>
+        /// <returns></returns>
+        public InsertCollectionQueryObject<T2> ThenDoInsert<T2>(IEnumerable<T2> smallCollection)
+        {
+            _concatTrans.Add(GetQuery());
+            return new InsertCollectionQueryObject<T2>(smallCollection, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
         }
 
         /// <summary>
@@ -101,13 +114,25 @@ namespace SqlBulkTools
         public InsertQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <typeparam name="T2"></typeparam>
+        /// <returns></returns>
+        public DeleteQueryObject<T2> ThenDoDelete<T2>(T2 entity)
+        {
+            _concatTrans.Add(GetQuery());
+            return new DeleteQueryObject<T2>(_ext);
+        } 
 
         private string GetQuery()
         {
             string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} " +
-                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}";
+                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)} ";
 
             BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
 

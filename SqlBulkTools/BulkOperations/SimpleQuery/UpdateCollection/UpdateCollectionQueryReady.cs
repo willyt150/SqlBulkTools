@@ -14,9 +14,9 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpdateQueryReady<T> : ITransaction
+    public class UpdateCollectionQueryReady<T> : ITransaction
     {
-        private readonly T _singleEntity;
+        private readonly DataTable _smallCollection;
         private readonly string _tableName;
         private readonly string _schema;
         private readonly HashSet<string> _columns;
@@ -46,10 +46,10 @@ namespace SqlBulkTools
         /// <param name="conditionSortOrder"></param>
         /// <param name="whereConditions"></param>
         /// <param name="parameters"></param>
-        public UpdateQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
+        public UpdateCollectionQueryReady(DataTable smallCollection, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
             int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> sqlParams, int transactionCount, string databaseIdentifier, List<string> concatTrans)
         {
-            _singleEntity = singleEntity;
+            _smallCollection = smallCollection;
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
@@ -73,7 +73,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        public UpdateQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
+        public UpdateCollectionQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
 
@@ -98,7 +98,7 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryReady<T> And(Expression<Func<T, bool>> expression)
+        public UpdateCollectionQueryReady<T> And(Expression<Func<T, bool>> expression)
         {
             BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _sqlParams, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
@@ -111,7 +111,7 @@ namespace SqlBulkTools
         /// <param name="expression"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryReady<T> Or(Expression<Func<T, bool>> expression)
+        public UpdateCollectionQueryReady<T> Or(Expression<Func<T, bool>> expression)
         {
             BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _sqlParams, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
@@ -124,20 +124,98 @@ namespace SqlBulkTools
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
+            StringBuilder sb = new StringBuilder();
 
-            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-            string comm = $"UPDATE {_databaseIdentifier} " +
-              $"{BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)}" +
-              $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+            //sb.Append("CREATE TABLE " + Constants.TempTableName + "(");
 
-            return comm;
+           
+            // Update idea...
+//            UPDATE table1
+            //SET table1.name = table2.name,
+            //    table1.[desc] = table2.[desc]
+            //FROM table1 JOIN table2
+            //   ON table1.id = table2.id
+
+            sb.Append(BulkOperationsHelper.CreateTableFromDataTable(_smallCollection) + " ");
+            sb.Append(
+                $"UPDATE {_databaseIdentifier} SET {_databaseIdentifier}.Price = {Constants.TempTableName}.Price FROM {_databaseIdentifier} JOIN {Constants.TempTableName} ON {_databaseIdentifier}.Id = {Constants.TempTableName}.Id");
+            //List<string> paramList = new List<string>();
+
+            //foreach (var column in _columns.ToList())
+            //{
+
+            //    paramList.Add("[" + column + "]" + " " + SqlTypeMap.GetSqlTypeFromNetType(typeof(string)));
+            //}
+
+            //string paramListConcatenated = string.Join(", ", paramList);
+
+            //command.Append(paramListConcatenated);
+
+            //sb.Append($"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, Constants.TempTableName)} ");
+
+            //List<string> statements = new List<string>();
+
+
+            /* Create a table type. */
+    //        CREATE TYPE LocationTableType AS TABLE
+    //        (LocationName VARCHAR(50)
+    //        , CostRate INT);
+    //        GO
+
+    //        /* Create a procedure to receive data for the table-valued parameter. */
+    //        CREATE PROCEDURE dbo. usp_InsertProductionLocation
+    //            @TVP LocationTableType READONLY
+    //AS
+    //SET NOCOUNT ON
+    //INSERT INTO AdventureWorks2012.Production.Location
+    //       (Name
+    //       , CostRate
+    //       , Availability
+    //       , ModifiedDate)
+    //    SELECT *, 0, GETDATE()
+    //    FROM @TVP;
+    //        GO
+
+
+
+            //int before = _transactionCount;
+            //foreach (var entity in _smallCollection)
+            //{
+            //    BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, entity, _identityColumn, _transactionCount);
+            //    _transactionCount++;
+            //}
+
+            //_transactionCount = before;
+
+            //for (int i = 0; i < _smallCollection.Count(); i++)
+            //{
+            //    if (i == 0)
+            //        statements.Add($"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}");
+
+            //    else
+            //        statements.Add($"{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}");
+
+            //    _transactionCount++;
+            //}
+
+            //sb.Append(string.Join(", ", statements));
+
+            return sb.ToString();
+
+            //BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
+
+            //var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            //string comm = $"UPDATE {_databaseIdentifier} " +
+            // $"{BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)}" +
+            // $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+            return sb.ToString();
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             int affectedRows = 0;
-            if (_singleEntity == null)
+            if (_smallCollection == null)
             {
                 return affectedRows;
             }
@@ -196,7 +274,7 @@ namespace SqlBulkTools
         async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             int affectedRows = 0;
-            if (_singleEntity == null)
+            if (_smallCollection == null)
             {
                 return affectedRows;
             }
@@ -205,7 +283,7 @@ namespace SqlBulkTools
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, null);
+            //BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, null);
 
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
 
