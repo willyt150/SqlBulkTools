@@ -20,13 +20,17 @@ namespace SqlBulkTools
         private Dictionary<string, string> CustomColumnMappings { get; set; }
         private int _sqlTimeout;
         private int _transactionCount;
+        private string _databaseIdentifier;
+        private List<string> _concatTrans;
+        private List<SqlParameter> _sqlParams;
+
         /// <summary>
         /// 
         /// </summary>
         /// <param name="singleEntity"></param>
         /// <param name="tableName"></param>
         /// <param name="ext"></param>
-        public UpdateQueryTable(T singleEntity, string tableName, BulkOperations ext, int transactionCount)
+        public UpdateQueryTable(T singleEntity, string tableName, BulkOperations ext, int transactionCount, string databaseIdentifier, List<string> concatTrans, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _sqlTimeout = 600;
@@ -39,6 +43,9 @@ namespace SqlBulkTools
             Columns = new HashSet<string>();
             CustomColumnMappings = new Dictionary<string, string>();
             _transactionCount = transactionCount;
+            _databaseIdentifier = databaseIdentifier;
+            _concatTrans = concatTrans;
+            _sqlParams = sqlParams;
         }
 
         /// <summary>
@@ -51,7 +58,7 @@ namespace SqlBulkTools
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
             return new UpdateQueryAddColumn<T>(_singleEntity, _tableName, Columns, _schema, 
-                _sqlTimeout, _ext, _transactionCount);
+                _sqlTimeout, _ext, _transactionCount, _databaseIdentifier, _concatTrans, _sqlParams);
         }
 
         /// <summary>

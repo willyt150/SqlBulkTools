@@ -106,7 +106,7 @@ namespace SqlBulkTools
         public UpdateQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new UpdateQueryObject<T2>(entity, _ext, _transactionCount++);
+            return new UpdateQueryObject<T2>(entity, _ext, _transactionCount++, _concatTrans, _sqlParams);
         }
 
         /// <summary>

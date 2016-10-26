@@ -26,8 +26,10 @@ namespace SqlBulkTools
         private readonly List<Condition> _andConditions;
         private readonly List<Condition> _orConditions;
         private int _conditionSortOrder;
-        private readonly List<SqlParameter> _parameters;
-        private int _transactionCount;    
+        private readonly List<SqlParameter> _sqlParams;
+        private int _transactionCount;
+        private string _databaseIdentifier;
+        private List<string> _concatTrans;
 
         /// <summary>
         /// 
@@ -40,7 +42,7 @@ namespace SqlBulkTools
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         public UpdateQuery(T singleEntity, string tableName, string schema, HashSet<string> columns, 
-            Dictionary<string, string> customColumnMappings, int sqlTimeout, BulkOperations ext, int transactionCount)
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, BulkOperations ext, int transactionCount, string databaseIdentifier, List<string> concatTrans, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -52,9 +54,11 @@ namespace SqlBulkTools
             _whereConditions = new List<Condition>();
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
-            _parameters = new List<SqlParameter>();
+            _sqlParams = sqlParams;
             _conditionSortOrder = 1;
             _transactionCount = transactionCount;
+            _databaseIdentifier = databaseIdentifier;
+            _concatTrans = concatTrans;
         }
 
         /// <summary>
@@ -64,13 +68,13 @@ namespace SqlBulkTools
         public UpdateQueryReady<T> Where(Expression<Func<T, bool>> expression)
         {
             // _whereConditions list will only ever contain one element.
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.Where, _whereConditions, _parameters, 
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Where, _whereConditions, _sqlParams, 
                 _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
 
             _conditionSortOrder++;
 
             return new UpdateQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
-                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters, _transactionCount);
+                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _sqlParams, _transactionCount, _databaseIdentifier, _concatTrans);
         }
 
     }

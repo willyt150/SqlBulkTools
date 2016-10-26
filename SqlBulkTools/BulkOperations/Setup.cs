@@ -65,7 +65,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public UpdateQueryObject<T> ForSimpleUpdateQuery(T entity)
         {
-            return new UpdateQueryObject<T>(entity, _ext, _transactionCount);
+            return new UpdateQueryObject<T>(entity, _ext, _transactionCount, _concatTrans, _sqlParams);
         }
 
 
