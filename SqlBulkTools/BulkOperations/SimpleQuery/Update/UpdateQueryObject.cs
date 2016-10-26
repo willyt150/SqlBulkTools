@@ -8,16 +8,18 @@
     {
         private readonly T _singleEntity;
         private readonly BulkOperations _ext;
+        private int _transactionCount;
 
         /// <summary>
         /// 
         /// </summary>
         /// <param name="singleEntity"></param>
         /// <param name="ext"></param>
-        public UpdateQueryObject(T singleEntity, BulkOperations ext)
+        public UpdateQueryObject(T singleEntity, BulkOperations ext, int transactionCount)
         {
             _ext = ext;
             _singleEntity = singleEntity;
+            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -25,9 +27,9 @@
         /// </summary>
         /// <param name="tableName">Name of the table.</param>
         /// <returns></returns>
-        public QueryTable<T> WithTable(string tableName)
+        public UpdateQueryTable<T> WithTable(string tableName)
         {
-            return new QueryTable<T>(_singleEntity, tableName, _ext);
+            return new UpdateQueryTable<T>(_singleEntity, tableName, _ext, _transactionCount);
         }
     }
 }

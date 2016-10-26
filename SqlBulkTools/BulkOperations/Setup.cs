@@ -1,4 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
+using System.Security.Principal;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -8,8 +11,7 @@ namespace SqlBulkTools
     /// </summary>
     public class Setup
     {
-        private readonly BulkOperations _ext;
-
+        private readonly BulkOperations _ext; 
         /// <summary>
         /// 
         /// </summary>
@@ -37,7 +39,10 @@ namespace SqlBulkTools
     public class Setup<T>
     {
         private readonly BulkOperations _ext;
-
+        private List<string> _concatTrans;
+        private string _databaseIdentifier;
+        private List<SqlParameter> _sqlParams;
+        private int _transactionCount;
         /// <summary>
         /// 
         /// </summary>
@@ -45,6 +50,11 @@ namespace SqlBulkTools
         public Setup(BulkOperations ext)
         {
             _ext = ext;
+            _concatTrans = new List<string>();
+            _sqlParams = new List<SqlParameter>();
+            _transactionCount = 1;
+            // When we commit transaction, this will be replaced with the actual database name. 
+            _databaseIdentifier = Guid.NewGuid().ToString();
         }
 
         /// <summary>
@@ -55,7 +65,29 @@ namespace SqlBulkTools
         /// <returns></returns>
         public UpdateQueryObject<T> ForSimpleUpdateQuery(T entity)
         {
-            return new UpdateQueryObject<T>(entity, _ext);
+            return new UpdateQueryObject<T>(entity, _ext, _transactionCount);
+        }
+
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <returns></returns>
+        public InsertQueryObject<T> ForSimpleInsertQuery(T entity)
+        {
+            return new InsertQueryObject<T>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
+        /// <param name="insertMode"></param>
+        /// <returns></returns>
+        public UpsertQueryObject<T> ForSimpleUpsertQuery(T entity)
+        {
+            return new UpsertQueryObject<T>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         /// <summary>
@@ -66,6 +98,8 @@ namespace SqlBulkTools
         {
             return new DeleteQueryObject<T>(_ext);
         }
+
+
 
         /// <summary>
         /// Represents the collection of objects to be inserted/upserted/updated/deleted (configured in next steps). 

@@ -16,7 +16,6 @@ namespace SqlBulkTools.IntegrationTests
     [TestFixture]
     class QueryOperationsIT
     {
-        private const int RepeatTimes = 1;
 
         private BookRandomizer _randomizer;
         private TestContext _db;
@@ -354,6 +353,131 @@ namespace SqlBulkTools.IntegrationTests
 
             Assert.AreEqual(5, deletedRecords);
             Assert.AreEqual(25, _db.Books.Count());
+        }
+
+        [Test]
+        public void SqlBulkTools_Insert_ManualAddColumn()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            bulk.Setup<Book>()
+                .ForSimpleInsertQuery(new Book() {BestSeller = true, Description = "Greatest dad in the world", Title = "Hello World", ISBN = "1234567", Price=23.99M})
+                .WithTable("Books")
+                .AddColumn(x => x.Title)
+                .AddColumn(x => x.ISBN)
+                .AddColumn(x => x.BestSeller)
+                .AddColumn(x => x.Description)
+                .AddColumn(x => x.Price)
+                .Insert();
+
+            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.AreEqual(1, insertedRecords);
+            Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
+        }
+
+        [Test]
+        public void SqlBulkTools_Insert_AddAllColumns()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            bulk.Setup<Book>()
+                .ForSimpleInsertQuery(new Book()
+                {
+                    BestSeller = true,
+                    Description = "Greatest dad in the world",
+                    Title = "Hello World",
+                    ISBN = "1234567",
+                    Price = 23.99M
+                })
+                .WithTable("Books")
+                .AddAllColumns()
+                .Insert()
+                .SetIdentityColumn(x => x.Id);
+
+            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.AreEqual(1, insertedRecords);
+            Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
+        }
+
+        [Test]
+        public void SqlBulkTools_Upsert_AddAllColumns()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            bulk.Setup<Book>()
+                .ForSimpleUpsertQuery(new Book()
+                {
+                    BestSeller = true,
+                    Description = "Greatest dad in the world",
+                    Title = "Hello World",
+                    ISBN = "1234567",
+                    Price = 23.99M
+                })
+                .WithTable("Books")
+                .AddAllColumns()
+                .Insert()
+                .SetIdentityColumn(x => x.Id)
+                .MatchTargetOn(x => x.Id);
+
+            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.AreEqual(1, insertedRecords);
+            Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
+        }
+
+        [Test]
+        public void SqlBulkTools_Upsert_AddAllColumnsWithExistingRecord()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+            int insertedRecords = default(int);
+
+            bulk.Setup<Book>()
+                .ForSimpleInsertQuery(new Book()
+                {
+                    BestSeller = true,
+                    Description = "Greatest dad in the world",
+                    Title = "Hello World",
+                    ISBN = "1234567",
+                    Price = 23.99M
+                })
+                .WithTable("Books")
+                .AddAllColumns()
+                .Insert()
+                .SetIdentityColumn(x => x.Id);
+
+            insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.IsTrue(insertedRecords == 1);
+
+            bulk.Setup<Book>()
+                .ForSimpleUpsertQuery(new Book()
+                {
+                    BestSeller = true,
+                    Description = "Greatest dad in the world",
+                    Title = "Hello Greggo",
+                    ISBN = "1234567",
+                    Price = 23.99M
+                })
+                .WithTable("Books")
+                .AddAllColumns()
+                .Insert()
+                .SetIdentityColumn(x => x.Id)
+                .MatchTargetOn(x => x.Id);
+
+            insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.AreEqual(1, insertedRecords);
+            Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.Title == "Hello Greggo"));
         }
 
     }

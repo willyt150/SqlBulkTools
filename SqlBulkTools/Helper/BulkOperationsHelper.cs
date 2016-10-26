@@ -311,9 +311,8 @@ namespace SqlBulkTools
         /// Specificially for UpdateQuery and DeleteQuery
         /// </summary>
         /// <param name="columns"></param>
-        /// <param name="fullQualifiedTableName"></param>
         /// <returns></returns>
-        internal static string BuildUpdateSet(HashSet<string> columns, string fullQualifiedTableName)
+        internal static string BuildUpdateSet(HashSet<string> columns, int transactionCount, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> paramsSeparated = new List<string>();
@@ -322,7 +321,8 @@ namespace SqlBulkTools
 
             foreach (var column in columns.ToList())
             {
-                paramsSeparated.Add(fullQualifiedTableName + "." + "[" + column + "]" + " = @" + column);
+                if (column != identityColumn)
+                    paramsSeparated.Add($"[{column}] = @{column}{transactionCount}");
             }
 
             command.Append(string.Join(", ", paramsSeparated));
@@ -357,13 +357,13 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal static string BuildInsertIntoSet(HashSet<string> columns, string identityColumn, string tableName)
+        internal static string BuildInsertIntoSet(HashSet<string> columns, string identityColumn, string fullQualifiedTableName)
         {
             StringBuilder command = new StringBuilder();
             List<string> insertColumns = new List<string>();
 
             command.Append("INSERT INTO ");
-            command.Append(tableName);
+            command.Append(fullQualifiedTableName);
             command.Append(" (");
 
             foreach (var column in columns)
@@ -374,6 +374,23 @@ namespace SqlBulkTools
 
             command.Append(string.Join(", ", insertColumns));
             command.Append(") ");
+
+            return command.ToString();
+        }
+
+        internal static string BuildValueSet(HashSet<string> columns, string identityColumn, int transactionCount)
+        {
+            StringBuilder command = new StringBuilder();
+            List<string> valueList = new List<string>();
+
+            command.Append("(");
+            foreach (var column in columns)
+            {
+                if (column != identityColumn)
+                    valueList.Add($"@{column + transactionCount}");
+            }
+            command.Append(string.Join(", ", valueList));
+            command.Append(")");
 
             return command.ToString();
         }
@@ -504,7 +521,7 @@ namespace SqlBulkTools
         }
 
         // Loops through object properties, checks if column has been added, adds as sql parameter. Used for the UpdateQuery method. 
-        public static void AddSqlParamsForUpdateQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item)
+        public static void AddSqlParamsForQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item, string identityColumn = null, int? transactionCount = null)
         {
             PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -515,8 +532,18 @@ namespace SqlBulkTools
                     if (props[i].Name == column && item != null && CheckForValidDataType(props[i].PropertyType, throwIfInvalid: true))
                     {
                         DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(props[i].PropertyType);
-                        SqlParameter param = new SqlParameter($"@{column}", sqlType);
-                        param.Value = props[i].GetValue(item, null);
+
+                        SqlParameter param = transactionCount.HasValue ? new SqlParameter($"@{column + transactionCount}", sqlType) : new SqlParameter($"@{column}", sqlType);
+
+                        object propValue = props[i].GetValue(item, null);
+
+                        if (propValue == null)
+                        {
+                            param.Value = DBNull.Value;
+                        }
+
+                        else
+                            param.Value = propValue;
 
                         sqlParameters.Add(param);
                     }

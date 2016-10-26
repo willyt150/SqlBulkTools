@@ -53,9 +53,19 @@
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryTable.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryAddColumnList.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryAddColumn.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryTable.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQuery.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryTable.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryAddColumn.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryAddColumnList.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryReady.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryTable.cs" />
     <Compile Include="Helper\Condition.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryObject.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryAddColumn.cs" />
@@ -86,6 +96,7 @@
     <Compile Include="Exception\SqlBulkToolsException.cs" />
     <Compile Include="BulkOperations\BulkCopy\BulkForCollection.cs" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

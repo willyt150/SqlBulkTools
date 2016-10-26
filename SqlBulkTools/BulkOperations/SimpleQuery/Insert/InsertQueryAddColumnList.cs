@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpdateQueryAddColumn<T>
+    public class InsertQueryAddColumnList<T>
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -19,6 +19,10 @@ namespace SqlBulkTools
         private readonly string _schema;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
+        private List<SqlParameter> _parameters;
+        private List<string> _concatTrans;
+        private string _databaseIdentifier;
+        private List<SqlParameter> _sqlParams;
         private int _transactionCount;
 
         /// <summary>
@@ -30,8 +34,12 @@ namespace SqlBulkTools
         /// <param name="schema"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        public UpdateQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, int transactionCount)
+        /// <param name="concatTrans"></param>
+        /// <param name="databaseIdentifier"></param>
+        /// <param name="sqlParams"></param>
+        /// <param name="insertMode"></param>
+        public InsertQueryAddColumnList(T singleEntity, string tableName, HashSet<string> columns, string schema,
+            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -40,29 +48,21 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
+            _parameters = new List<SqlParameter>();
+            _concatTrans = concatTrans;
+            _databaseIdentifier = databaseIdentifier;
+            _sqlParams = sqlParams;
             _transactionCount = transactionCount;
-        }
-
-        /// <summary>
-        /// Add each column that you want to include in the query. Only include the columns that are relevant to the 
-        /// procedure for best performance. 
-        /// </summary>
-        /// <param name="columnName">Column name as represented in database</param>
-        /// <returns></returns>
-        public UpdateQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
-        {
-            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
-            _columns.Add(propertyName);
-            return this;
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        public UpdateQuery<T> Update()
+        public InsertQueryReady<T> Insert()
         {
-            return new UpdateQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext, _transactionCount);
+            return new InsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
+                _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         /// <summary>
@@ -77,7 +77,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public UpdateQueryAddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public InsertQueryAddColumnList<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);

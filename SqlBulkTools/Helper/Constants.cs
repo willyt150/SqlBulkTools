@@ -37,5 +37,6 @@ namespace SqlBulkTools
     {
         Update, Delete, Where, And, Or
     }
+
 #pragma warning restore 1591
 }

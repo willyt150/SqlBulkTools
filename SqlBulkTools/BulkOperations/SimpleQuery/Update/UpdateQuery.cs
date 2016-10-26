@@ -26,7 +26,8 @@ namespace SqlBulkTools
         private readonly List<Condition> _andConditions;
         private readonly List<Condition> _orConditions;
         private int _conditionSortOrder;
-        private readonly List<SqlParameter> _parameters;      
+        private readonly List<SqlParameter> _parameters;
+        private int _transactionCount;    
 
         /// <summary>
         /// 
@@ -39,7 +40,7 @@ namespace SqlBulkTools
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         public UpdateQuery(T singleEntity, string tableName, string schema, HashSet<string> columns, 
-            Dictionary<string, string> customColumnMappings, int sqlTimeout, BulkOperations ext)
+            Dictionary<string, string> customColumnMappings, int sqlTimeout, BulkOperations ext, int transactionCount)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -53,6 +54,7 @@ namespace SqlBulkTools
             _orConditions = new List<Condition>();
             _parameters = new List<SqlParameter>();
             _conditionSortOrder = 1;
+            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -68,7 +70,7 @@ namespace SqlBulkTools
             _conditionSortOrder++;
 
             return new UpdateQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
-                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters);
+                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _parameters, _transactionCount);
         }
 
     }

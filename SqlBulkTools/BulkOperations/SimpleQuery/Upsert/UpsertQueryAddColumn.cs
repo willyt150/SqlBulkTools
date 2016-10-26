@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpdateQueryAddColumn<T>
+    public class UpsertQueryAddColumn<T>
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -19,6 +19,9 @@ namespace SqlBulkTools
         private readonly string _schema;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
+        private List<string> _concatTrans;
+        private string _databaseIdentifier;
+        private List<SqlParameter> _sqlParams;
         private int _transactionCount;
 
         /// <summary>
@@ -30,8 +33,8 @@ namespace SqlBulkTools
         /// <param name="schema"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        public UpdateQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, int transactionCount)
+        public UpsertQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
+            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -40,6 +43,9 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
+            _concatTrans = concatTrans;
+            _databaseIdentifier = databaseIdentifier;
+            _sqlParams = sqlParams;
             _transactionCount = transactionCount;
         }
 
@@ -49,7 +55,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public UpdateQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
+        public UpsertQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             _columns.Add(propertyName);
@@ -60,9 +66,10 @@ namespace SqlBulkTools
         /// 
         /// </summary>
         /// <returns></returns>
-        public UpdateQuery<T> Update()
+        public UpsertQueryReady<T> Upsert()
         {
-            return new UpdateQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext, _transactionCount);
+            return new UpsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
+                _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         /// <summary>
@@ -77,7 +84,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public UpdateQueryAddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public UpsertQueryAddColumn<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);

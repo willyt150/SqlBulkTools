@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Text;
 using System.Threading.Tasks;
 
 // ReSharper disable once CheckNamespace
@@ -13,7 +14,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpdateQueryReady<T> : ITransaction
+    public class InsertQueryReady<T> : ITransaction
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -22,12 +23,11 @@ namespace SqlBulkTools
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
-        private readonly List<Condition> _whereConditions;
-        private readonly List<Condition> _andConditions;
-        private readonly List<Condition> _orConditions;
-        private readonly List<SqlParameter> _parameters;
         private int _conditionSortOrder;
         private string _identityColumn;
+        private List<string> _concatTrans;
+        private string _databaseIdentifier;
+        private List<SqlParameter> _sqlParams;
         private int _transactionCount;
 
         /// <summary>
@@ -40,11 +40,8 @@ namespace SqlBulkTools
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        /// <param name="conditionSortOrder"></param>
-        /// <param name="whereConditions"></param>
-        /// <param name="parameters"></param>
-        public UpdateQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
-            int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> parameters, int transactionCount)
+        public InsertQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
+            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -53,13 +50,10 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _conditionSortOrder = conditionSortOrder;
             _ext.SetBulkExt(this);
-            _whereConditions = whereConditions;  
-            _andConditions = new List<Condition>();
-            _orConditions = new List<Condition>();
-            _parameters = parameters;
-            _identityColumn = string.Empty;
+            _concatTrans = concatTrans;
+            _databaseIdentifier = databaseIdentifier;
+            _sqlParams = sqlParams;
             _transactionCount = transactionCount;
         }
 
@@ -68,7 +62,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        public UpdateQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
+        public InsertQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
 
@@ -86,31 +80,38 @@ namespace SqlBulkTools
             return this;
         }
 
-
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="expression"></param>
+        /// <param name="entity"></param>
+        /// <typeparam name="T2"></typeparam>
         /// <returns></returns>
-        /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryReady<T> And(Expression<Func<T, bool>> expression)
+        public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
-            _conditionSortOrder++;
-            return this;
+            _concatTrans.Add(GetQuery());
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="expression"></param>
+        /// <param name="entity"></param>
+        /// <typeparam name="T2"></typeparam>
         /// <returns></returns>
-        /// <exception cref="SqlBulkToolsException"></exception>
-        public UpdateQueryReady<T> Or(Expression<Func<T, bool>> expression)
+        public InsertQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
-            _conditionSortOrder++;
-            return this;
+            _concatTrans.Add(GetQuery());
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+        }
+
+        private string GetQuery()
+        {
+            string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} " +
+                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}";
+
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
+
+            return comm;
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
@@ -121,15 +122,8 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_parameters, _columns, _singleEntity, _identityColumn, _transactionCount);
-
-            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
             
-
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
                 conn.Open();
@@ -144,23 +138,41 @@ namespace SqlBulkTools
                         command.CommandTimeout = _sqlTimeout;
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
+    _tableName);
 
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)}" +
-                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+                        StringBuilder sb = new StringBuilder();
+                        _concatTrans.Add(GetQuery());                        
+                        _concatTrans.ForEach(x => sb.Append(x));
 
-                        command.CommandText = comm;
+                        sb.Replace(_databaseIdentifier, fullQualifiedTableName);
+                         
+                        command.CommandText = sb.ToString();
 
-                        if (_parameters.Count > 0)
+                        if (_sqlParams.Count > 0)
                         {
-                            command.Parameters.AddRange(_parameters.ToArray());
+                            command.Parameters.AddRange(_sqlParams.ToArray());
                         }
 
                         affectedRows = command.ExecuteNonQuery();
                         transaction.Commit();
 
                         return affectedRows;
+                    }
+
+                    catch (SqlException e)
+                    {
+                        for (int i = 0; i < e.Errors.Count; i++)
+                        {
+                            // Error 8102 is identity error. 
+                            if (e.Errors[i].Number == 544)
+                            {
+                                // Expensive but neccessary to inform user of an important configuration setup. 
+                                throw new IdentityException(e.Errors[i].Message);
+                            }
+                        }
+
+                        transaction.Rollback();
+                        throw;
                     }
 
                     catch (Exception)
@@ -185,13 +197,13 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-            BulkOperationsHelper.AddSqlParamsForQuery(_parameters, _columns, _singleEntity, null);
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
 
-            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            //var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
 
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
@@ -210,21 +222,37 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
                             _tableName);
 
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)}" +
-                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+                        //string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                        //              $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)}";
+                                              
 
-                        command.CommandText = comm;
+                        //command.CommandText = comm;
 
-                        if (_parameters.Count > 0)
+                        if (_sqlParams.Count > 0)
                         {
-                            command.Parameters.AddRange(_parameters.ToArray());
+                            command.Parameters.AddRange(_sqlParams.ToArray());
                         }
 
                         affectedRows = await command.ExecuteNonQueryAsync();
                         transaction.Commit();
 
                         return affectedRows;
+                    }
+
+                    catch (SqlException e)
+                    {
+                        for (int i = 0; i < e.Errors.Count; i++)
+                        {
+                            // Error 8102 is identity error. 
+                            if (e.Errors[i].Number == 544)
+                            {
+                                // Expensive but neccessary to inform user of an important configuration setup. 
+                                throw new IdentityException(e.Errors[i].Message);
+                            }
+                        }
+
+                        transaction.Rollback();
+                        throw;
                     }
 
                     catch (Exception)
