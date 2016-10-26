@@ -7,15 +7,15 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class InsertQueryObject<T>
+    public class InsertCollectionQueryObject<T>
     {
-        private readonly T _singleEntity;
+        private IEnumerable<T> _smallCollection;
         private readonly BulkOperations _ext;
         private List<string> _concatTrans;
         public string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
         private int _transactionCount;
-        private IEnumerable<T> _smallCollection;
+        
 
         /// <summary>
         /// 
@@ -24,10 +24,10 @@ namespace SqlBulkTools
         /// <param name="smallCollection"></param>
         /// <param name="ext"></param>
         /// <param name="transactionCount"></param>
-        public InsertQueryObject(T singleEntity, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+        public InsertCollectionQueryObject(IEnumerable<T> smallCollection, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
             _ext = ext;
-            _singleEntity = singleEntity;
+            _smallCollection = smallCollection;
             _concatTrans = concatTrans;
             _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
@@ -39,9 +39,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="tableName">Name of the table.</param>
         /// <returns></returns>
-        public InsertQueryTable<T> WithTable(string tableName)
+        public InsertCollectionQueryTable<T> WithTable(string tableName)
         {        
-            return new InsertQueryTable<T>(_singleEntity, tableName, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertCollectionQueryTable<T>(_smallCollection, tableName, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
     }
 }

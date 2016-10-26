@@ -10,9 +10,9 @@ namespace SqlBulkTools
     /// Configurable options for table. 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class InsertQueryTable<T>
+    public class InsertCollectionQueryTable<T>
     {
-        private readonly T _singleEntity;
+        private readonly IEnumerable<T> _smallCollection;
         private HashSet<string> Columns { get; set; }
         private string _schema;
         private readonly string _tableName;
@@ -23,7 +23,6 @@ namespace SqlBulkTools
         private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
         private int _transactionCount;
-        private IEnumerable<T> _smallCollection; 
 
         /// <summary>
         /// 
@@ -32,9 +31,9 @@ namespace SqlBulkTools
         /// <param name="tableName"></param>
         /// <param name="ext"></param>
         /// <param name="transactionCount"></param>
-        public InsertQueryTable(T singleEntity, string tableName, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+        public InsertCollectionQueryTable(IEnumerable<T> smallCollection, string tableName, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
-            _singleEntity = singleEntity;
+            _smallCollection = smallCollection;
             _sqlTimeout = 600;
             _schema = Constants.DefaultSchemaName;
             Columns = new HashSet<string>();
@@ -55,11 +54,11 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public InsertQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
+        public InsertCollectionQueryAddColumn<T> AddColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
-            return new InsertQueryAddColumn<T>(_singleEntity, _tableName, Columns, _schema, 
+            return new InsertCollectionQueryAddColumn<T>(_smallCollection, _tableName, Columns, _schema, 
                 _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
@@ -69,11 +68,11 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
-        public InsertQueryAddColumnList<T> AddAllColumns()
+        public InsertCollectionQueryAddColumnList<T> AddAllColumns()
         {
             Columns = BulkOperationsHelper.GetAllValueTypeAndStringColumns(typeof(T));
 
-            return new InsertQueryAddColumnList<T>(_singleEntity, _tableName, Columns, _schema,
+            return new InsertCollectionQueryAddColumnList<T>(_smallCollection, _tableName, Columns, _schema,
                 _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
@@ -83,7 +82,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="schema"></param>
         /// <returns></returns>
-        public InsertQueryTable<T> WithSchema(string schema)
+        public InsertCollectionQueryTable<T> WithSchema(string schema)
         {
             _schema = schema;
             return this;
@@ -94,7 +93,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="seconds"></param>
         /// <returns></returns>
-        public InsertQueryTable<T> WithSqlCommandTimeout(int seconds)
+        public InsertCollectionQueryTable<T> WithSqlCommandTimeout(int seconds)
         {
             _sqlTimeout = seconds;
             return this;

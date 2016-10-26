@@ -83,6 +83,16 @@ namespace SqlBulkTools
         /// 
         /// </summary>
         /// <param name="entity"></param>
+        /// <returns></returns>
+        public InsertCollectionQueryObject<T> ForSimpleInsertQuery(IEnumerable<T> smallCollection)
+        {
+            return new InsertCollectionQueryObject<T>(smallCollection, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="entity"></param>
         /// <param name="insertMode"></param>
         /// <returns></returns>
         public UpsertQueryObject<T> ForSimpleUpsertQuery(T entity)

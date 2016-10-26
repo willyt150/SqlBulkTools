@@ -14,9 +14,9 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpsertQueryReady<T> : ITransaction
+    public class InsertCollectionQueryReady<T> : ITransaction
     {
-        private readonly T _singleEntity;
+        private readonly IEnumerable<T> _smallCollection;
         private readonly string _tableName;
         private readonly string _schema;
         private readonly HashSet<string> _columns;
@@ -28,7 +28,6 @@ namespace SqlBulkTools
         private List<string> _concatTrans;
         private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
-        private string _matchTargetOn;
         private int _transactionCount;
 
         /// <summary>
@@ -41,13 +40,10 @@ namespace SqlBulkTools
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        /// <param name="conditionSortOrder"></param>
-        /// <param name="whereConditions"></param>
-        /// <param name="parameters"></param>
-        public UpsertQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
+        public InsertCollectionQueryReady(IEnumerable<T> smallCollection, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
             int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
         {
-            _singleEntity = singleEntity;
+            _smallCollection = smallCollection;
             _tableName = tableName;
             _schema = schema;
             _columns = columns;
@@ -58,7 +54,6 @@ namespace SqlBulkTools
             _concatTrans = concatTrans;
             _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _matchTargetOn = string.Empty;
             _transactionCount = transactionCount;
         }
 
@@ -67,7 +62,7 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="columnName"></param>
         /// <returns></returns>
-        public UpsertQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
+        public InsertCollectionQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
 
@@ -94,7 +89,7 @@ namespace SqlBulkTools
         public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount++);
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         /// <summary>
@@ -103,57 +98,54 @@ namespace SqlBulkTools
         /// <param name="entity"></param>
         /// <typeparam name="T2"></typeparam>
         /// <returns></returns>
-        public UpdateQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
+        public InsertQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
         {
             _concatTrans.Add(GetQuery());
-            return new UpdateQueryObject<T2>(entity, _ext, _transactionCount++);
-        }
-
-        /// <summary>
-        /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
-        /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
-        /// for matching composite relationships. 
-        /// </summary>
-        /// <param name="columnName"></param>
-        /// <returns></returns>
-        public UpsertQueryReady<T> MatchTargetOn(Expression<Func<T, object>> columnName)
-        {
-            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
-
-            if (propertyName == null)
-                throw new NullReferenceException("MatchTargetOn column name can't be null.");
-
-            _matchTargetOn = propertyName;
-
-            return this;
+            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
         }
 
         private string GetQuery()
         {
-            string comm = $"UPDATE {_databaseIdentifier} {BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn}{_transactionCount} " +
-                          $"IF (@@ROWCOUNT = 0) BEGIN " +
-                          $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} " +
-                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)} " +
-                          $"END ";
+            StringBuilder sb = new StringBuilder();
+            sb.Append($"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} ");
 
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
+            List<string> statements = new List<string>();
 
-            return comm;
+            int before = _transactionCount;
+            foreach (var entity in _smallCollection)
+            {
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, entity, _identityColumn, _transactionCount);
+                _transactionCount++;
+            }
+
+            _transactionCount = before;
+
+            for (int i = 0; i < _smallCollection.Count(); i++)
+            {
+                if (i == 0)
+                    statements.Add($"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}");
+
+                else
+                    statements.Add($"{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)}");
+
+                _transactionCount++;
+            }
+
+            sb.Append(string.Join(", ", statements));
+
+            return sb.ToString();
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             int affectedRows = 0;
-            if (_singleEntity == null)
+            if (_smallCollection == null)
             {
                 return affectedRows;
             }
 
-            if (_matchTargetOn == null)
-                throw new NullReferenceException("MatchTargetOn column name can't be null.");
-
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
-            
+                 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
                 conn.Open();
@@ -167,7 +159,8 @@ namespace SqlBulkTools
                         command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
+    _tableName);
 
                         StringBuilder sb = new StringBuilder();
                         _concatTrans.Add(GetQuery());                        
@@ -221,19 +214,18 @@ namespace SqlBulkTools
         async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
         {
             int affectedRows = 0;
-            if (_singleEntity == null)
+            if (_smallCollection == null)
             {
                 return affectedRows;
             }
+            int before = _transactionCount;
+            foreach (var entity in _smallCollection)
+            {
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _smallCollection, _identityColumn, _transactionCount);
+                _transactionCount++;
+            }
 
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
-
-            //var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-
+            _transactionCount = before;
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {

@@ -53,6 +53,11 @@
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryTable.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Delete\DeleteQueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\InsertCollection\InsertCollectionQueryAddColumn.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\InsertCollection\InsertCollectionQueryAddColumnList.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\InsertCollection\InsertCollectionQueryObject.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\InsertCollection\InsertCollectionQueryReady.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\InsertCollection\InsertCollectionQueryTable.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryAddColumnList.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryAddColumn.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryTable.cs" />

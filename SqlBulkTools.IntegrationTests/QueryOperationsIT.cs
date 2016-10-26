@@ -480,5 +480,25 @@ namespace SqlBulkTools.IntegrationTests
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.Title == "Hello Greggo"));
         }
 
+        [Test]
+        public void SqlBulkTools_InsertCollection_AddAllColumns()
+        {
+            _db.Books.RemoveRange(_db.Books.ToList());
+            _db.SaveChanges();
+            BulkOperations bulk = new BulkOperations();
+
+            List<Book> books = _randomizer.GetRandomCollection(4);
+
+            bulk.Setup<Book>()
+                .ForSimpleInsertQuery(books)
+                .WithTable("Books")
+                .AddAllColumns()
+                .Insert()
+                .SetIdentityColumn(x => x.Id);
+
+            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+
+            Assert.AreEqual(4, insertedRecords);
+        }
     }
 }
