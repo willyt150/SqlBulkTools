@@ -10,14 +10,14 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public class BulkOperations : IBulkOperations, IEnlistmentNotification
+    public class BulkOperations : IBulkOperations
     {
         private ITransaction _sqlBulkToolsTransaction;
         private SqlTransaction _sqlTransaction;
 
         public BulkOperations()
         {
-            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.None);
+            //Transaction.Current.EnlistVolatile(this, EnlistmentOptions.None);
         }
 
         internal void SetBulkExt(ITransaction sqlBulkToolsTransaction)
@@ -163,7 +163,7 @@ namespace SqlBulkTools
         public void Rollback(Enlistment enlistment)
         {
             
-            _sqlTransaction.Rollback();
+           // _sqlTransaction.Rollback();
 
             enlistment.Done();
         }

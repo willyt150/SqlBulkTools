@@ -440,22 +440,28 @@ namespace SqlBulkTools.IntegrationTests
 
                     int insertedRecords = bulk.CommitTransaction(con);
 
-                    bulk = new BulkOperations();
-                    bulk.Setup<Book>()
-                        .ForSimpleUpsertQuery(new Book()
-                        {
-                            BestSeller = true,
-                            Description = "Greatest dad in the world",
-                            Title = "Hello World",
-                            ISBN = "1234567",
-                            Price = 23.99M
-                        })
-                        .WithTable("Books")
-                        .AddAllColumns()
-                        .Insert()
-                        .MatchTargetOn(x => x.Id);
+                    using (SqlConnection con2 = new SqlConnection(ConfigurationManager
+                        .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                    {
 
-                    insertedRecords = bulk.CommitTransaction(con);
+
+                        bulk = new BulkOperations();
+                        bulk.Setup<Book>()
+                            .ForSimpleUpsertQuery(new Book()
+                            {
+                                BestSeller = true,
+                                Description = "Greatest dad in the world",
+                                Title = "Hello World",
+                                ISBN = "1234567",
+                                Price = 23.99M
+                            })
+                            .WithTable("Books")
+                            .AddAllColumns()
+                            .Insert()
+                            .MatchTargetOn(x => x.Id);
+
+                        insertedRecords = bulk.CommitTransaction(con2);
+                    }
                 }
 
 

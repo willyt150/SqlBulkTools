@@ -144,16 +144,16 @@ namespace SqlBulkTools
             {
                 conn.Open();
 
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {                   
+                //using (SqlTransaction transaction = conn.BeginTransaction())
+                //{                   
                     try
                     {
                         
-                        _ext.SetTransaction(transaction);
+                        //_ext.SetTransaction(transaction);
 
                         SqlCommand command = conn.CreateCommand();
                         command.Connection = conn;
-                        command.Transaction = transaction;
+                        //command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
@@ -195,7 +195,7 @@ namespace SqlBulkTools
                             }
                         }
 
-                        transaction.Commit();
+                        //transaction.Commit();
 
                         return affectedRows;
                     }
@@ -212,21 +212,21 @@ namespace SqlBulkTools
                             }
                         }
 
-                        transaction.Rollback();
+                        //transaction.Rollback();
                         throw;
                     }
 
                     catch (Exception)
                     {
-                        transaction.Rollback();
+                        //transaction.Rollback();
                         throw;
                     }
 
                     finally
                     {
-                        conn.Close();
+                        //conn.Close();
                     }
-                }
+              //  }
             }
         }
 
