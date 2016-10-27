@@ -2,6 +2,7 @@
 using System.Configuration;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
+using System.Transactions;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -9,13 +10,24 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public class BulkOperations : IBulkOperations
+    public class BulkOperations : IBulkOperations, IEnlistmentNotification
     {
-        private ITransaction _transaction; 
+        private ITransaction _sqlBulkToolsTransaction;
+        private SqlTransaction _sqlTransaction;
 
-        internal void SetBulkExt(ITransaction transaction)
+        public BulkOperations()
         {
-            _transaction = transaction;
+            Transaction.Current.EnlistVolatile(this, EnlistmentOptions.None);
+        }
+
+        internal void SetBulkExt(ITransaction sqlBulkToolsTransaction)
+        {
+            _sqlBulkToolsTransaction = sqlBulkToolsTransaction;
+        }
+
+        internal void SetTransaction(SqlTransaction sqlTransaction)
+        {
+            _sqlTransaction = sqlTransaction;
         }
 
         /// <summary>
@@ -29,17 +41,18 @@ namespace SqlBulkTools
         /// <param name="credentials"></param>
         public int CommitTransaction(string connectionName, SqlCredential credentials = null)
         {
+            
             if (connectionName == null)
                 throw new ArgumentNullException(nameof(connectionName) + " not given");
 
             if (ConfigurationManager.ConnectionStrings[connectionName] == null)
                 throw new SqlBulkToolsException("Connection name \'" + connectionName + "\' not found. A valid connection name is required for this operation.");
 
-            if (_transaction == null)
+            if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
             
 
-            return _transaction.CommitTransaction(connectionName, credentials);
+            return _sqlBulkToolsTransaction.CommitTransaction(connectionName, credentials);
         }
 
         /// <summary>
@@ -60,10 +73,10 @@ namespace SqlBulkTools
             if (ConfigurationManager.ConnectionStrings[connectionName] == null)
                 throw new SqlBulkToolsException("Connection name \'" + connectionName + "\' not found. A valid connection name is required for this operation.");
 
-            if (_transaction == null)
+            if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return await _transaction.CommitTransactionAsync(connectionName, credentials);
+            return await _sqlBulkToolsTransaction.CommitTransactionAsync(connectionName, credentials);
         }
 
 
@@ -79,10 +92,10 @@ namespace SqlBulkTools
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
 
-            if (_transaction == null)
+            if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return _transaction.CommitTransaction(connection : connection);
+            return _sqlBulkToolsTransaction.CommitTransaction(connection : connection);
         }
 
 
@@ -99,10 +112,10 @@ namespace SqlBulkTools
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
 
-            if (_transaction == null)
+            if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return await _transaction.CommitTransactionAsync(connection : connection);
+            return await _sqlBulkToolsTransaction.CommitTransactionAsync(connection : connection);
         }
 
         /// <summary>
@@ -135,6 +148,29 @@ namespace SqlBulkTools
         public Setup Setup()
         {
             return new Setup(this);
+        }
+
+        public void Prepare(PreparingEnlistment preparingEnlistment)
+        {
+            preparingEnlistment.Prepared();
+        }
+
+        public void Commit(Enlistment enlistment)
+        {
+            enlistment.Done();
+        }
+
+        public void Rollback(Enlistment enlistment)
+        {
+            
+            _sqlTransaction.Rollback();
+
+            enlistment.Done();
+        }
+
+        public void InDoubt(Enlistment enlistment)
+        {
+            enlistment.Done();
         }
 
     }

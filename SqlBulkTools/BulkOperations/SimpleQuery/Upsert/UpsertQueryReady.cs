@@ -4,9 +4,11 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
+using System.Transactions;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -28,6 +30,7 @@ namespace SqlBulkTools
         private string _identityColumn;
         private List<SqlParameter> _sqlParams;
         private string _matchTargetOn;
+        private ColumnDirection _outputIdentity;
 
         /// <summary>
         /// 
@@ -55,6 +58,31 @@ namespace SqlBulkTools
             _ext.SetBulkExt(this);
             _sqlParams = sqlParams;
             _matchTargetOn = string.Empty;
+            _outputIdentity = ColumnDirection.Input;
+        }
+
+        /// <summary>
+        /// Sets the identity column for the table. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        public UpsertQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection outputIdentity)
+        {
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
+            _outputIdentity = outputIdentity;
+
+            if (propertyName == null)
+                throw new SqlBulkToolsException("SetIdentityColumn column name can't be null");
+
+            if (_identityColumn == null)
+                _identityColumn = propertyName;
+
+            else
+            {
+                throw new SqlBulkToolsException("Can't have more than one identity column");
+            }
+
+            return this;
         }
 
         /// <summary>
@@ -117,25 +145,34 @@ namespace SqlBulkTools
                 conn.Open();
 
                 using (SqlTransaction transaction = conn.BeginTransaction())
-                {
+                {                   
                     try
                     {
+                        
+                        _ext.SetTransaction(transaction);
+
                         SqlCommand command = conn.CreateCommand();
                         command.Connection = conn;
                         command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
+                        StringBuilder sb = new StringBuilder();
 
-                        string comm = $"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
+                        sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
                           $"IF (@@ROWCOUNT = 0) BEGIN " +
                           $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
                           $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
-                          $"END ";
+                          $"END ");
 
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                        }
 
-                        command.CommandText = comm;
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                        command.CommandText = sb.ToString();
 
                         if (_sqlParams.Count > 0)
                         {
@@ -143,6 +180,21 @@ namespace SqlBulkTools
                         }
 
                         affectedRows = command.ExecuteNonQuery();
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            foreach (var x in _sqlParams)
+                            {
+                                if (x.Direction == ParameterDirection.Output 
+                                    && x.ParameterName == $"@{_identityColumn}")
+                                {
+                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                                    propertyInfo.SetValue(_singleEntity, x.Value);
+                                    break;
+                                }
+                            }
+                        }
+
                         transaction.Commit();
 
                         return affectedRows;
@@ -186,14 +238,10 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+            if (_matchTargetOn == null)
+                throw new NullReferenceException("MatchTargetOn column name can't be null.");
 
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
-
-            //var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -208,14 +256,24 @@ namespace SqlBulkTools
                         command.Transaction = transaction;
                         command.CommandTimeout = _sqlTimeout;
 
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
+                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
+                        StringBuilder sb = new StringBuilder();
 
-                        //string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
-                        //              $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)}";
-                                              
+                        sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} " +
+                                  $"WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
+                                  $"IF (@@ROWCOUNT = 0) BEGIN " +
+                                  $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                                  $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
+                                  $"END ");
 
-                        //command.CommandText = comm;
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                        }
+
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                        command.CommandText = sb.ToString();
 
                         if (_sqlParams.Count > 0)
                         {
@@ -223,6 +281,21 @@ namespace SqlBulkTools
                         }
 
                         affectedRows = await command.ExecuteNonQueryAsync();
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            foreach (var x in _sqlParams)
+                            {
+                                if (x.Direction == ParameterDirection.Output
+                                    && x.ParameterName == $"@{_identityColumn}")
+                                {
+                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                                    propertyInfo.SetValue(_singleEntity, x.Value);
+                                    break;
+                                }
+                            }
+                        }
+
                         transaction.Commit();
 
                         return affectedRows;

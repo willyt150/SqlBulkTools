@@ -524,7 +524,8 @@ namespace SqlBulkTools
         }
 
         // Loops through object properties, checks if column has been added, adds as sql parameter. Used for the UpdateQuery method. 
-        public static void AddSqlParamsForQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item, string identityColumn = null, int? transactionCount = null)
+        public static void AddSqlParamsForQuery<T>(List<SqlParameter> sqlParameters, HashSet<string> columns, T item, 
+            string identityColumn = null, ColumnDirection direction = ColumnDirection.Input)
         {
             PropertyInfo[] props = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
 
@@ -536,7 +537,7 @@ namespace SqlBulkTools
                     {
                         DbType sqlType = SqlTypeMap.GetSqlTypeFromNetType(props[i].PropertyType);
 
-                        SqlParameter param = transactionCount.HasValue ? new SqlParameter($"@{column + transactionCount}", sqlType) : new SqlParameter($"@{column}", sqlType);
+                        SqlParameter param = new SqlParameter($"@{column}", sqlType);
 
                         object propValue = props[i].GetValue(item, null);
 
@@ -547,6 +548,9 @@ namespace SqlBulkTools
 
                         else
                             param.Value = propValue;
+                       
+                        if (column == identityColumn && direction == ColumnDirection.InputOutput)
+                            param.Direction = ParameterDirection.Output;
 
                         sqlParameters.Add(param);
                     }

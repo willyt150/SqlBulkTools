@@ -41,81 +41,6 @@ public class Book {
 }
 ```
 
-###SimpleUpdateQuery (from version 2.4)
-```c#
-/* Easily update one or more records. */
-
-var bulk = new BulkOperations();
-Book bookToUpdate = new Book()
-{
-    ISBN = "123456789ABCD",
-    Description = "I'm a bit dusty, update me!"
-    Price = 49.99
-};
-
-bulk.Setup<Book>()
-.ForSimpleUpdateQuery(bookToUpdate)
-.WithTable("Books")
-.AddColumn(x => x.Price)
-.AddColumn(x => x.Description)
-.Update()
-.Where(x => x.ISBN == book.ISBN)
-
-int updatedRecords = bulk.CommitTransaction("DefaultConnection"); /* updatedRecords will be 1 if a 
-record with the above ISBN exists. */
-
-```
-
-##FAQ:##
-
-Sure, that's pretty cool and convenient but have you thought about SQL injection? 
-
-Yes. The above fluent expression translates to:
-
-```sql
-UPDATE [SqlBulkTools].[dbo].[Books] 
-SET [SqlBulkTools].[dbo].[Books].[Price] = @Price, 
-[SqlBulkTools].[dbo].[Books].[Description] = @Description 
-WHERE [ISBN] = @ISBNCondition1
-```
-
-Why is the number 1 appended to @ISBNCondition?
-
-It's perfectly legal to have more than one AND/OR conditions for the same 
-column. SQLBulkTools will create a new parameter for each predicate. 
-
-Can I change the schema from [dbo]? 
-Yes. See advanced options at the bottom of this page. 
-
-What about if my table column(s) doesn't match the corresponding model representation in C#?
-Do a custom column mapping... There's an example somewhere in this documentation. 
-
-What about comparing to null values? 
-SqlBulkTools will make a comparison using IS NULL or IS NOT NULL and skip sending parameter. 
-
-###SimpleDeleteQuery (from version 2.4)
-```c#
-/* Easily delete one or more records in a single roundtrip. */
-
-bulk.Setup<Book>()
-.ForSimpleDeleteQuery()
-.WithTable("Books")
-.Delete()
-.Where(x => x.Warehouse == 1)
-.And(x => x.Price >= 100)
-.And(x => x.Description == null)
-
-int affectedRecords = bulk.CommitTransaction("DefaultConnection");
-```
-
-This translates to:
-
-```sql
-DELETE FROM [SqlBulkTools].[dbo].[Books]  
-WHERE [WarehouseId] = @WarehouseIdCondition1 
-AND [Price] >= @PriceCondition2 
-AND [Description] IS NULL
-```
 
 ###BulkInsert
 ---------------
@@ -409,6 +334,82 @@ bulk.Setup<Book>()
 
 bulk.CommitTransaction("DefaultConnection");
 
+```
+
+###SimpleUpdateQuery (from version 2.4)
+```c#
+/* Easily update one or more records. */
+
+var bulk = new BulkOperations();
+Book bookToUpdate = new Book()
+{
+    ISBN = "123456789ABCD",
+    Description = "I'm a bit dusty, update me!"
+    Price = 49.99
+};
+
+bulk.Setup<Book>()
+.ForSimpleUpdateQuery(bookToUpdate)
+.WithTable("Books")
+.AddColumn(x => x.Price)
+.AddColumn(x => x.Description)
+.Update()
+.Where(x => x.ISBN == book.ISBN)
+
+int updatedRecords = bulk.CommitTransaction("DefaultConnection"); /* updatedRecords will be 1 if a 
+record with the above ISBN exists. */
+
+```
+
+##FAQ:##
+
+Sure, that's pretty cool and convenient but have you thought about SQL injection? 
+
+Yes. The above fluent expression translates to:
+
+```sql
+UPDATE [SqlBulkTools].[dbo].[Books] 
+SET [SqlBulkTools].[dbo].[Books].[Price] = @Price, 
+[SqlBulkTools].[dbo].[Books].[Description] = @Description 
+WHERE [ISBN] = @ISBNCondition1
+```
+
+Why is the number 1 appended to @ISBNCondition?
+
+It's perfectly legal to have more than one AND/OR conditions for the same 
+column. SQLBulkTools will create a new parameter for each predicate. 
+
+Can I change the schema from [dbo]? 
+Yes. See advanced options at the bottom of this page. 
+
+What about if my table column(s) doesn't match the corresponding model representation in C#?
+Do a custom column mapping... There's an example somewhere in this documentation. 
+
+What about comparing to null values? 
+SqlBulkTools will make a comparison using IS NULL or IS NOT NULL and skip sending parameter. 
+
+###SimpleDeleteQuery (from version 2.4)
+```c#
+/* Easily delete one or more records in a single roundtrip. */
+
+bulk.Setup<Book>()
+.ForSimpleDeleteQuery()
+.WithTable("Books")
+.Delete()
+.Where(x => x.Warehouse == 1)
+.And(x => x.Price >= 100)
+.And(x => x.Description == null)
+
+int affectedRecords = bulk.CommitTransaction("DefaultConnection");
+```
+
+This translates to:
+
+```sql
+DELETE FROM [SqlBulkTools].[dbo].[Books]  
+WHERE [WarehouseId] = @WarehouseIdCondition1 
+AND [Price] >= @PriceCondition2 
+AND [Description] IS NULL
 ```
 
 ###How does SqlBulkTools compare to others? 

@@ -198,7 +198,7 @@ namespace SqlBulkTools
                 DataTable dtCols = null;
                 if (_outputIdentity == ColumnDirection.InputOutput)
                     dtCols = BulkOperationsHelper.GetDatabaseSchema(conn, _schema, _tableName);
-
+                
                 using (SqlTransaction transaction = conn.BeginTransaction())
                 {
                     //Bulk insert into temp table

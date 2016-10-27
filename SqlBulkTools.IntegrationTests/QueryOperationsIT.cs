@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.Entity;
 using System.Data.SqlClient;
 using System.Linq;
+using System.Transactions;
 using NUnit.Framework;
 using Ploeh.AutoFixture;
 using SqlBulkTools.IntegrationTests.Data;
@@ -373,7 +374,8 @@ namespace SqlBulkTools.IntegrationTests
                 .AddColumn(x => x.BestSeller)
                 .AddColumn(x => x.Description)
                 .AddColumn(x => x.Price)
-                .Insert();
+                .Insert()
+                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
 
             int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
 
@@ -413,26 +415,55 @@ namespace SqlBulkTools.IntegrationTests
         {
             _db.Books.RemoveRange(_db.Books.ToList());
             _db.SaveChanges();
-            BulkOperations bulk = new BulkOperations();
+            using (TransactionScope tx = new TransactionScope())
+            {
+                
 
-            bulk.Setup<Book>()
-                .ForSimpleUpsertQuery(new Book()
+                using (SqlConnection con = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    BestSeller = true,
-                    Description = "Greatest dad in the world",
-                    Title = "Hello World",
-                    ISBN = "1234567",
-                    Price = 23.99M
-                })
-                .WithTable("Books")
-                .AddAllColumns()
-                .Insert()
-                .SetIdentityColumn(x => x.Id)
-                .MatchTargetOn(x => x.Id);
+                    var bulk = new BulkOperations();
+                    bulk.Setup<Book>()
+                    .ForSimpleUpsertQuery(new Book()
+                    {
+                        BestSeller = true,
+                        Description = "Greatest dad in the world",
+                        Title = "Hello World",
+                        ISBN = "1234567",
+                        Price = 23.99M
+                    })
+                    .WithTable("Books")
+                    .AddAllColumns()
+                    .Insert()
+                    .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                    .MatchTargetOn(x => x.Id);
 
-            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                    int insertedRecords = bulk.CommitTransaction(con);
 
-            Assert.AreEqual(1, insertedRecords);
+                    bulk = new BulkOperations();
+                    bulk.Setup<Book>()
+                        .ForSimpleUpsertQuery(new Book()
+                        {
+                            BestSeller = true,
+                            Description = "Greatest dad in the world",
+                            Title = "Hello World",
+                            ISBN = "1234567",
+                            Price = 23.99M
+                        })
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .Insert()
+                        .MatchTargetOn(x => x.Id);
+
+                    insertedRecords = bulk.CommitTransaction(con);
+                }
+
+
+                tx.Complete();
+            }
+
+
+            Assert.AreEqual(1, _db.Books.Count());
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
         }
 

@@ -140,7 +140,7 @@ namespace SqlBulkTools
                         BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
                         BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
 
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
 
                         var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
                         string comm = $"UPDATE {fullQualifiedTableName} " +
@@ -201,7 +201,7 @@ namespace SqlBulkTools
                         BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
                         BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
                         BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
 
                         var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
                         string comm = $"UPDATE {fullQualifiedTableName} " +

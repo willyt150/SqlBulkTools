@@ -594,7 +594,7 @@ namespace SqlBulkTools.UnitTests
 
             List<SqlParameter> sqlParams = new List<SqlParameter>();
 
-            BulkOperationsHelper.AddSqlParamsForQuery(sqlParams, columns, book, null);
+            BulkOperationsHelper.AddSqlParamsForQuery(sqlParams, columns, book);
 
             Assert.AreEqual(3, sqlParams.Count);
         }

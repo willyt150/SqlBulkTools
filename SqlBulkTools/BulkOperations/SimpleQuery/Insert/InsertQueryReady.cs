@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
@@ -26,8 +27,9 @@ namespace SqlBulkTools
         private readonly BulkOperations _ext;
         private int _conditionSortOrder;
         private string _identityColumn;
+        private ColumnDirection _outputIdentity;
         private List<SqlParameter> _sqlParams;
-        private int _transactionCount;
+        
 
         /// <summary>
         /// 
@@ -51,6 +53,7 @@ namespace SqlBulkTools
             _ext = ext;
             _ext.SetBulkExt(this);
             _sqlParams = sqlParams;
+            _outputIdentity = ColumnDirection.Input;
         }
 
         /// <summary>
@@ -72,6 +75,36 @@ namespace SqlBulkTools
             {
                 throw new SqlBulkToolsException("Can't have more than one identity column");
             }
+
+            _columns.Add(propertyName);
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the identity column for the table. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="direction"></param>
+        /// <returns></returns>
+        public InsertQueryReady<T> SetIdentityColumn(Expression<Func<T, object>> columnName, ColumnDirection direction)
+        {
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
+            _outputIdentity = direction;
+
+            if (propertyName == null)
+                throw new SqlBulkToolsException("SetIdentityColumn column name can't be null");
+
+            if (_identityColumn == null)
+                _identityColumn = propertyName;
+
+           
+            else
+            {
+                throw new SqlBulkToolsException("Can't have more than one identity column");
+            }
+
+            _columns.Add(propertyName);
 
             return this;
         }
@@ -100,14 +133,21 @@ namespace SqlBulkTools
                         command.CommandTimeout = _sqlTimeout;
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-    _tableName);
+                        _tableName);
 
-                        string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
-                                      $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} ";
+                        StringBuilder sb = new StringBuilder();
 
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+                        sb.Append($"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                                      $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} ");
 
-                        command.CommandText = comm;
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY();");
+                        }
+
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                        command.CommandText = sb.ToString();
 
                         if (_sqlParams.Count > 0)
                         {
@@ -115,6 +155,22 @@ namespace SqlBulkTools
                         }
 
                         affectedRows = command.ExecuteNonQuery();
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            foreach (var x in _sqlParams)
+                            {
+                                if (x.Direction == ParameterDirection.Output
+                                    && x.ParameterName == $"@{_identityColumn}")
+                                {
+                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                                    propertyInfo.SetValue(_singleEntity, x.Value);
+                                    break;
+                                }
+                            }
+                        }
+
+
                         transaction.Commit();
 
                         return affectedRows;
@@ -158,14 +214,7 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-           // BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
-
-            //var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
             using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
             {
@@ -181,13 +230,21 @@ namespace SqlBulkTools
                         command.CommandTimeout = _sqlTimeout;
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
+                        _tableName);
 
-                        //string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
-                        //              $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)}";
-                                              
+                        StringBuilder sb = new StringBuilder();
 
-                        //command.CommandText = comm;
+                        sb.Append($"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                                      $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} ");
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY();");
+                        }
+
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                        command.CommandText = sb.ToString();
 
                         if (_sqlParams.Count > 0)
                         {
@@ -195,6 +252,22 @@ namespace SqlBulkTools
                         }
 
                         affectedRows = await command.ExecuteNonQueryAsync();
+
+                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        {
+                            foreach (var x in _sqlParams)
+                            {
+                                if (x.Direction == ParameterDirection.Output
+                                    && x.ParameterName == $"@{_identityColumn}")
+                                {
+                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                                    propertyInfo.SetValue(_singleEntity, x.Value);
+                                    break;
+                                }
+                            }
+                        }
+
+
                         transaction.Commit();
 
                         return affectedRows;

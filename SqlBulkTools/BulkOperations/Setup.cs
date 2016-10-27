@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Security.Principal;
+using System.Transactions;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -54,7 +55,6 @@ namespace SqlBulkTools
         {
             return new StoredProcedure(_ext, storedProcedureName, sqlParameters: sqlParameters, timeout: timeout);
         }
-
 
     }
 
