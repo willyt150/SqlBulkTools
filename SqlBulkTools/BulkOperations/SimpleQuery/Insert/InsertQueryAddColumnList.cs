@@ -19,11 +19,7 @@ namespace SqlBulkTools
         private readonly string _schema;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
-        private List<SqlParameter> _parameters;
-        private List<string> _concatTrans;
-        private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
-        private int _transactionCount;
 
         /// <summary>
         /// 
@@ -39,7 +35,7 @@ namespace SqlBulkTools
         /// <param name="sqlParams"></param>
         /// <param name="insertMode"></param>
         public InsertQueryAddColumnList(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -48,11 +44,7 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
-            _parameters = new List<SqlParameter>();
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -62,7 +54,7 @@ namespace SqlBulkTools
         public InsertQueryReady<T> Insert()
         {
             return new InsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
-                _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+                _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>

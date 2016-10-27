@@ -41,7 +41,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public InsertQueryTable<T> WithTable(string tableName)
         {        
-            return new InsertQueryTable<T>(_singleEntity, tableName, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new InsertQueryTable<T>(_singleEntity, tableName, _ext, _sqlParams);
         }
     }
 }

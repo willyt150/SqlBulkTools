@@ -12,7 +12,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class DeleteQueryTable<T>
     {
-        private readonly T _singleEntity;
         private HashSet<string> Columns { get; set; }
         private string _schema;
         private readonly string _tableName;
@@ -22,12 +21,10 @@ namespace SqlBulkTools
         /// <summary>
         /// 
         /// </summary>
-        /// <param name="singleEntity"></param>
         /// <param name="tableName"></param>
         /// <param name="ext"></param>
-        public DeleteQueryTable(T singleEntity, string tableName, BulkOperations ext)
+        public DeleteQueryTable(string tableName, BulkOperations ext)
         {
-            _singleEntity = singleEntity;
             _sqlTimeout = 600;
             _schema = Constants.DefaultSchemaName;
             Columns = new HashSet<string>();

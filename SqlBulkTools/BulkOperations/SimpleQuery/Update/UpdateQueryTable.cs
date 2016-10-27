@@ -30,7 +30,7 @@ namespace SqlBulkTools
         /// <param name="singleEntity"></param>
         /// <param name="tableName"></param>
         /// <param name="ext"></param>
-        public UpdateQueryTable(T singleEntity, string tableName, BulkOperations ext, int transactionCount, string databaseIdentifier, List<string> concatTrans, List<SqlParameter> sqlParams)
+        public UpdateQueryTable(T singleEntity, string tableName, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _sqlTimeout = 600;
@@ -42,9 +42,6 @@ namespace SqlBulkTools
             _schema = Constants.DefaultSchemaName;
             Columns = new HashSet<string>();
             CustomColumnMappings = new Dictionary<string, string>();
-            _transactionCount = transactionCount;
-            _databaseIdentifier = databaseIdentifier;
-            _concatTrans = concatTrans;
             _sqlParams = sqlParams;
         }
 

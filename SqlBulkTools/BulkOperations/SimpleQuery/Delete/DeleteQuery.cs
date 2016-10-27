@@ -17,8 +17,6 @@ namespace SqlBulkTools
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
         private readonly List<Condition> _whereConditions;
-        private readonly List<Condition> _andConditions;
-        private readonly List<Condition> _orConditions;
         private readonly List<SqlParameter> _parameters;
         private int _conditionSortOrder;
 
@@ -36,11 +34,8 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _whereConditions = new List<Condition>();
-            _andConditions = new List<Condition>();
-            _orConditions = new List<Condition>();
             _parameters = new List<SqlParameter>();
             _conditionSortOrder = 1;
-
         }
 
         /// <summary>

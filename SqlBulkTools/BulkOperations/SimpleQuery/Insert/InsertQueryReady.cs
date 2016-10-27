@@ -26,8 +26,6 @@ namespace SqlBulkTools
         private readonly BulkOperations _ext;
         private int _conditionSortOrder;
         private string _identityColumn;
-        private List<string> _concatTrans;
-        private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
         private int _transactionCount;
 
@@ -42,7 +40,7 @@ namespace SqlBulkTools
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         public InsertQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
-            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -52,10 +50,7 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _ext.SetBulkExt(this);
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -79,64 +74,6 @@ namespace SqlBulkTools
             }
 
             return this;
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
-        {
-            _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="smallCollection"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public InsertCollectionQueryObject<T2> ThenDoInsert<T2>(IEnumerable<T2> smallCollection)
-        {
-            _concatTrans.Add(GetQuery());
-            return new InsertCollectionQueryObject<T2>(smallCollection, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public InsertQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
-        {
-            _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, ++_transactionCount);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public DeleteQueryObject<T2> ThenDoDelete<T2>(T2 entity)
-        {
-            _concatTrans.Add(GetQuery());
-            return new DeleteQueryObject<T2>(_ext);
-        } 
-
-        private string GetQuery()
-        {
-            string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} " +
-                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)} ";
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
-
-            return comm;
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
@@ -165,13 +102,12 @@ namespace SqlBulkTools
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
     _tableName);
 
-                        StringBuilder sb = new StringBuilder();
-                        _concatTrans.Add(GetQuery());                        
-                        _concatTrans.ForEach(x => sb.Append(x));
+                        string comm = $"{BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                                      $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} ";
 
-                        sb.Replace(_databaseIdentifier, fullQualifiedTableName);
-                         
-                        command.CommandText = sb.ToString();
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+
+                        command.CommandText = comm;
 
                         if (_sqlParams.Count > 0)
                         {

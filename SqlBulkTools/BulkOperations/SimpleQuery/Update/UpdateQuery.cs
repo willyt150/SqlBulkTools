@@ -74,7 +74,7 @@ namespace SqlBulkTools
             _conditionSortOrder++;
 
             return new UpdateQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, 
-                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _sqlParams, _transactionCount, _databaseIdentifier, _concatTrans);
+                _sqlTimeout, _ext, _conditionSortOrder, _whereConditions, _sqlParams);
         }
 
     }

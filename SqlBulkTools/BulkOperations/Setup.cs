@@ -31,6 +31,31 @@ namespace SqlBulkTools
         {
             return new BulkForCollection<T>(list, _ext);
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storedProcedureName"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public StoredProcedure ForStoredProcedure(string storedProcedureName, int timeout = 600)
+        {
+            return new StoredProcedure(_ext, storedProcedureName, timeout: timeout);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="storedProcedureName"></param>
+        /// <param name="sqlParameters"></param>
+        /// <param name="timeout"></param>
+        /// <returns></returns>
+        public StoredProcedure ForStoredProcedure(string storedProcedureName, IEnumerable<SqlParameter> sqlParameters = null, int timeout = 600)
+        {
+            return new StoredProcedure(_ext, storedProcedureName, sqlParameters: sqlParameters, timeout: timeout);
+        }
+
+
     }
 
     /// <summary>
@@ -66,18 +91,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public UpdateQueryObject<T> ForSimpleUpdateQuery(T entity)
         {
-            return new UpdateQueryObject<T>(entity, _ext, _transactionCount, _concatTrans, _sqlParams);
-        }
-
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="smallCollection"></param>
-        /// <returns></returns>
-        public UpdateCollectionQueryObject<T> ForSimpleUpdateQuery(DataTable smallCollection)
-        {
-            return new UpdateCollectionQueryObject<T>(smallCollection, _ext, _transactionCount, _concatTrans, _sqlParams);
+            return new UpdateQueryObject<T>(entity, _ext, _sqlParams);
         }
 
         /// <summary>
@@ -95,20 +109,9 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        public InsertCollectionQueryObject<T> ForSimpleInsertQuery(IEnumerable<T> smallCollection)
-        {
-            return new InsertCollectionQueryObject<T>(smallCollection, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <param name="insertMode"></param>
-        /// <returns></returns>
         public UpsertQueryObject<T> ForSimpleUpsertQuery(T entity)
         {
-            return new UpsertQueryObject<T>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+            return new UpsertQueryObject<T>(entity, _ext, _sqlParams);
         }
 
         /// <summary>
@@ -120,8 +123,6 @@ namespace SqlBulkTools
             return new DeleteQueryObject<T>(_ext);
         }
 
-
-
         /// <summary>
         /// Represents the collection of objects to be inserted/upserted/updated/deleted (configured in next steps). 
         /// </summary>
@@ -131,5 +132,7 @@ namespace SqlBulkTools
         {
             return new BulkForCollection<T>(list, _ext);
         }
+
+       
     }
 }

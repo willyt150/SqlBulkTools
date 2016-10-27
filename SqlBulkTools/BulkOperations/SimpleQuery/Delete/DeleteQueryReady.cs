@@ -17,8 +17,6 @@ namespace SqlBulkTools
     {
         private readonly string _tableName;
         private readonly string _schema;
-        private readonly HashSet<string> _columns;
-        private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
         private readonly List<Condition> _whereConditions;

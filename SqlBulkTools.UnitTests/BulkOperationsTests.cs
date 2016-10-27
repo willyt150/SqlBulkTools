@@ -540,7 +540,7 @@ namespace SqlBulkTools.UnitTests
             columns.Add("TestColumn");
 
             // Act
-            string result = BulkOperationsHelper.BuildValueSet(columns, "Id", 1);
+            string result = BulkOperationsHelper.BuildValueSet(columns, "Id");
 
             // Assert
             Assert.AreEqual("(@TestColumn1)", result);
@@ -555,7 +555,7 @@ namespace SqlBulkTools.UnitTests
             columns.Add("TestColumnB");
 
             // Act
-            string result = BulkOperationsHelper.BuildValueSet(columns, "Id", 1);
+            string result = BulkOperationsHelper.BuildValueSet(columns, "Id");
 
             // Assert
             Assert.AreEqual("(@TestColumnA1, @TestColumnB1)", result);
@@ -571,7 +571,7 @@ namespace SqlBulkTools.UnitTests
             columns.Add("Id");
 
             // Act
-            string result = BulkOperationsHelper.BuildValueSet(columns, "Id", 1);
+            string result = BulkOperationsHelper.BuildValueSet(columns, "Id");
 
             // Assert
             Assert.AreEqual("(@TestColumnA1, @TestColumnB1)", result);

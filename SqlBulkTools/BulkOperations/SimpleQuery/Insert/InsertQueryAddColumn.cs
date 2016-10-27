@@ -34,7 +34,7 @@ namespace SqlBulkTools
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         public InsertQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -43,10 +43,7 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -69,7 +66,7 @@ namespace SqlBulkTools
         public InsertQueryReady<T> Insert()
         {
             return new InsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
-                _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+                _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>

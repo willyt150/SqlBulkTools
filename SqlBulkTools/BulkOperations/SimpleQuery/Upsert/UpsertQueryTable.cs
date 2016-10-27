@@ -66,7 +66,6 @@ namespace SqlBulkTools
         /// Add each column that you want to include in the query. Only include the columns that are relevant to the 
         /// procedure for best performance. 
         /// </summary>
-        /// <param name="columnName">Column name as represented in database</param>
         /// <returns></returns>
         public UpsertQueryAddColumnList<T> AddAllColumns()
         {

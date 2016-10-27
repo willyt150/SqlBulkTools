@@ -13,7 +13,6 @@ namespace SqlBulkTools
         private readonly T _singleEntity;
         private readonly BulkOperations _ext;
         private int _transactionCount;
-        private string _databaseIdentifier;
         private List<string> _concatTrans;
         private List<SqlParameter> _sqlParams;
 
@@ -23,13 +22,10 @@ namespace SqlBulkTools
         /// </summary>
         /// <param name="singleEntity"></param>
         /// <param name="ext"></param>
-        public UpdateQueryObject(T singleEntity, BulkOperations ext, int transactionCount, List<string> concatTrans, List<SqlParameter> sqlParams)
+        public UpdateQueryObject(T singleEntity, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _ext = ext;
             _singleEntity = singleEntity;
-            _transactionCount = transactionCount;
-            _databaseIdentifier = Guid.NewGuid().ToString();
-            _concatTrans = concatTrans;
             _sqlParams = sqlParams;
         }
 
@@ -40,7 +36,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public UpdateQueryTable<T> WithTable(string tableName)
         {
-            return new UpdateQueryTable<T>(_singleEntity, tableName, _ext, _transactionCount, _databaseIdentifier, _concatTrans, _sqlParams);
+            return new UpdateQueryTable<T>(_singleEntity, tableName, _ext, _sqlParams);
         }
     }
 }

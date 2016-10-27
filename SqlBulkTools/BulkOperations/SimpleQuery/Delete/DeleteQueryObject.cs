@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace SqlBulkTools
+﻿namespace SqlBulkTools
 {
     /// <summary>
     /// 
@@ -12,7 +6,6 @@ namespace SqlBulkTools
     /// <typeparam name="T"></typeparam>
     public class DeleteQueryObject<T>
     {
-        private readonly T _singleEntity;
         private readonly BulkOperations _ext;
 
         /// <summary>
@@ -31,7 +24,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public DeleteQueryTable<T> WithTable(string tableName)
         {
-            return new DeleteQueryTable<T>(_singleEntity, tableName, _ext);
+            return new DeleteQueryTable<T>(tableName, _ext);
         }
     }
 }

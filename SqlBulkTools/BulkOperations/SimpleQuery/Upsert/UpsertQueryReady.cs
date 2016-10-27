@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -25,11 +26,8 @@ namespace SqlBulkTools
         private readonly BulkOperations _ext;
         private int _conditionSortOrder;
         private string _identityColumn;
-        private List<string> _concatTrans;
-        private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
         private string _matchTargetOn;
-        private int _transactionCount;
 
         /// <summary>
         /// 
@@ -45,7 +43,7 @@ namespace SqlBulkTools
         /// <param name="whereConditions"></param>
         /// <param name="parameters"></param>
         public UpsertQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
-            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -55,11 +53,8 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _ext.SetBulkExt(this);
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
             _matchTargetOn = string.Empty;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>
@@ -86,30 +81,6 @@ namespace SqlBulkTools
         }
 
         /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public InsertQueryObject<T2> ThenDoInsert<T2>(T2 entity)
-        {
-            _concatTrans.Add(GetQuery());
-            return new InsertQueryObject<T2>(entity, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount++);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="entity"></param>
-        /// <typeparam name="T2"></typeparam>
-        /// <returns></returns>
-        public UpdateQueryObject<T2> ThenDoUpdate<T2>(T2 entity)
-        {
-            _concatTrans.Add(GetQuery());
-            return new UpdateQueryObject<T2>(entity, _ext, _transactionCount++, _concatTrans, _sqlParams);
-        }
-
-        /// <summary>
         /// At least one MatchTargetOn is required for correct configuration. MatchTargetOn is the matching clause for evaluating 
         /// each row in table. This is usally set to the unique identifier in the table (e.g. Id). Multiple MatchTargetOn members are allowed 
         /// for matching composite relationships. 
@@ -126,19 +97,6 @@ namespace SqlBulkTools
             _matchTargetOn = propertyName;
 
             return this;
-        }
-
-        private string GetQuery()
-        {
-            string comm = $"UPDATE {_databaseIdentifier} {BulkOperationsHelper.BuildUpdateSet(_columns, _transactionCount, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn}{_transactionCount} " +
-                          $"IF (@@ROWCOUNT = 0) BEGIN " +
-                          $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, _databaseIdentifier)} " +
-                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn, _transactionCount)} " +
-                          $"END ";
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _transactionCount);
-
-            return comm;
         }
 
         int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
@@ -169,13 +127,15 @@ namespace SqlBulkTools
 
                         string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
 
-                        StringBuilder sb = new StringBuilder();
-                        _concatTrans.Add(GetQuery());                        
-                        _concatTrans.ForEach(x => sb.Append(x));
+                        string comm = $"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
+                          $"IF (@@ROWCOUNT = 0) BEGIN " +
+                          $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
+                          $"END ";
 
-                        sb.Replace(_databaseIdentifier, fullQualifiedTableName);
-                         
-                        command.CommandText = sb.ToString();
+                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn);
+
+                        command.CommandText = comm;
 
                         if (_sqlParams.Count > 0)
                         {

@@ -22,14 +22,11 @@ namespace SqlBulkTools
         /// <param name="singleEntity"></param>
         /// <param name="ext"></param>
         /// <param name="transactionCount"></param>
-        public UpsertQueryObject(T singleEntity, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+        public UpsertQueryObject(T singleEntity, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _ext = ext;
             _singleEntity = singleEntity;
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>

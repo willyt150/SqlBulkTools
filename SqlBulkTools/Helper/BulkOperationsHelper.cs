@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 
 [assembly: InternalsVisibleTo("SqlBulkTools.UnitTests")]
 [assembly: InternalsVisibleTo("SqlBulkTools.IntegrationTests")]
+// ReSharper disable once CheckNamespace
 namespace SqlBulkTools
 {
     internal static class BulkOperationsHelper
@@ -311,8 +312,10 @@ namespace SqlBulkTools
         /// Specificially for UpdateQuery and DeleteQuery
         /// </summary>
         /// <param name="columns"></param>
+        /// <param name="transactionCount"></param>
+        /// <param name="identityColumn"></param>
         /// <returns></returns>
-        internal static string BuildUpdateSet(HashSet<string> columns, int transactionCount, string identityColumn)
+        internal static string BuildUpdateSet(HashSet<string> columns, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> paramsSeparated = new List<string>();
@@ -322,7 +325,7 @@ namespace SqlBulkTools
             foreach (var column in columns.ToList())
             {
                 if (column != identityColumn)
-                    paramsSeparated.Add($"[{column}] = @{column}{transactionCount}");
+                    paramsSeparated.Add($"[{column}] = @{column}");
             }
 
             command.Append(string.Join(", ", paramsSeparated));
@@ -378,7 +381,7 @@ namespace SqlBulkTools
             return command.ToString();
         }
 
-        internal static string BuildValueSet(HashSet<string> columns, string identityColumn, int transactionCount)
+        internal static string BuildValueSet(HashSet<string> columns, string identityColumn)
         {
             StringBuilder command = new StringBuilder();
             List<string> valueList = new List<string>();
@@ -387,7 +390,7 @@ namespace SqlBulkTools
             foreach (var column in columns)
             {
                 if (column != identityColumn)
-                    valueList.Add($"@{column + transactionCount}");
+                    valueList.Add($"@{column}");
             }
             command.Append(string.Join(", ", valueList));
             command.Append(")");
@@ -1264,62 +1267,6 @@ namespace SqlBulkTools
             param.Value = condition.Value;
             sqlParamsList.Add(param);
 
-        }
-
-        public static string CreateTableFromDataTable(DataTable table)
-        {
-            string sqlsc;
-            sqlsc = "CREATE TABLE " + Constants.TempTableName + "(";
-            for (int i = 0; i < table.Columns.Count; i++)
-            {
-                sqlsc += "\n [" + table.Columns[i].ColumnName + "] ";
-                string columnType = table.Columns[i].DataType.ToString();
-                switch (columnType)
-                {
-                    case "System.Int32":
-                        sqlsc += " int ";
-                        break;
-                    case "System.Int64":
-                        sqlsc += " bigint ";
-                        break;
-                    case "System.Int16":
-                        sqlsc += " smallint";
-                        break;
-                    case "System.Byte":
-                        sqlsc += " tinyint";
-                        break;
-                    case "System.Decimal":
-                        sqlsc += " decimal ";
-                        break;
-                    case "System.DateTime":
-                        sqlsc += " datetime ";
-                        break;
-                    case "System.Double":
-                        sqlsc += " float ";
-                        break;
-                    case "System.Single":
-                        sqlsc += " real ";
-                        break;
-                    case "System.TimeSpan":
-                        sqlsc += " time "; 
-                        break;
-                    case "System.Guid":
-                        sqlsc += " uniqueidentifier ";
-                        break;
-                    case "System.Char":
-                        sqlsc += " nvarchar(1) ";
-                        break;
-                    default:
-                        sqlsc += string.Format(" nvarchar({0}) ", table.Columns[i].MaxLength == -1 ? "max" : table.Columns[i].MaxLength.ToString());
-                        break;
-                }
-                if (table.Columns[i].AutoIncrement)
-                    sqlsc += " IDENTITY(" + table.Columns[i].AutoIncrementSeed.ToString() + "," + table.Columns[i].AutoIncrementStep.ToString() + ") ";
-                if (!table.Columns[i].AllowDBNull)
-                    sqlsc += " NOT NULL ";
-                sqlsc += ",";
-            }
-            return sqlsc.Substring(0, sqlsc.Length - 1) + "\n)";
         }
     }
 }

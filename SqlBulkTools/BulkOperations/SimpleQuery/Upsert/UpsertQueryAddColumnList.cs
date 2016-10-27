@@ -62,7 +62,7 @@ namespace SqlBulkTools
         public UpsertQueryReady<T> Insert()
         {
             return new UpsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
-                _sqlTimeout, _ext, _concatTrans, _databaseIdentifier, _sqlParams, _transactionCount);
+                _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>
