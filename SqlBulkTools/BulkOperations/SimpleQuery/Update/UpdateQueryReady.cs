@@ -53,7 +53,6 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _conditionSortOrder = conditionSortOrder;
-            //_ext.SetBulkExt(this);
             _whereConditions = whereConditions;
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
@@ -131,13 +130,10 @@ namespace SqlBulkTools
                 _tableName);
 
 
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
-
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, customColumns: _customColumnMappings);          
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
+
             string comm = $"UPDATE {fullQualifiedTableName} " +
             $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
             $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
@@ -174,13 +170,10 @@ namespace SqlBulkTools
                 _tableName);
 
 
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
-
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, customColumns: _customColumnMappings);
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
+
             string comm = $"UPDATE {fullQualifiedTableName} " +
             $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
             $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";

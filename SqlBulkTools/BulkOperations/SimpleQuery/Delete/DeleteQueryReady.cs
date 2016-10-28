@@ -42,7 +42,6 @@ namespace SqlBulkTools
             _schema = schema;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            // _ext.SetBulkExt(this);
             _whereConditions = whereConditions;
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
@@ -79,6 +78,11 @@ namespace SqlBulkTools
             return this;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
         public int Commit(SqlConnection connection)
         {
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
@@ -108,6 +112,11 @@ namespace SqlBulkTools
             return affectedRows;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <returns></returns>
         public async Task<int> CommitAsync(SqlConnection connection)
         {
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);

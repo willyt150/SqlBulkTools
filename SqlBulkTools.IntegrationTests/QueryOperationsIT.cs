@@ -582,5 +582,144 @@ namespace SqlBulkTools.IntegrationTests
             Assert.AreEqual(1, _db.Books.Count());
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.Title == "Hello Greggo"));
         }
+
+        [Test]
+        public void SqlBulkTools_Insert_CustomColumnMapping()
+        {
+            BulkOperations bulk = new BulkOperations();
+
+            List<CustomColumnMappingTest> col = new List<CustomColumnMappingTest>();
+
+            for (int i = 0; i < 30; i++)
+            {
+                col.Add(new CustomColumnMappingTest() { NaturalId = i, ColumnXIsDifferent = "ColumnX " + i, ColumnYIsDifferentInDatabase = i });
+            }
+
+            var customColumn = new CustomColumnMappingTest()
+            {
+                NaturalId = 1,
+                ColumnXIsDifferent = $"ColumnX 1",
+                ColumnYIsDifferentInDatabase = 1
+            };
+
+            _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
+            _db.SaveChanges();
+
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<CustomColumnMappingTest>()
+                        .ForSimpleInsertQuery(customColumn)
+                        .WithTable("CustomColumnMappingTests")
+                        .AddAllColumns()
+                        .CustomColumnMapping(x => x.ColumnXIsDifferent, "ColumnX")
+                        .CustomColumnMapping(x => x.ColumnYIsDifferentInDatabase, "ColumnY")
+                        .Insert()
+                        .Commit(conn);
+                }
+
+                trans.Complete();
+            }
+
+            // Assert
+            Assert.IsTrue(_db.CustomColumnMappingTest.First().ColumnXIsDifferent == "ColumnX 1");
+        }
+
+        [Test]
+        public void SqlBulkTools_Upsert_CustomColumnMapping()
+        {
+            BulkOperations bulk = new BulkOperations();
+
+            var customColumn = new CustomColumnMappingTest()
+            {
+                NaturalId = 1,
+                ColumnXIsDifferent = "ColumnX " + 1,
+                ColumnYIsDifferentInDatabase = 3
+            };
+
+            _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
+            _db.SaveChanges();
+
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<CustomColumnMappingTest>()
+                        .ForSimpleUpsertQuery(customColumn)
+                        .WithTable("CustomColumnMappingTests")
+                        .AddAllColumns()                        
+                        .CustomColumnMapping(x => x.ColumnXIsDifferent, "ColumnX")
+                        .CustomColumnMapping(x => x.ColumnYIsDifferentInDatabase, "ColumnY")                        
+                        .Upsert()
+                        .MatchTargetOn(x => x.NaturalId)
+                        .Commit(conn);
+                }
+
+                trans.Complete();
+            }
+
+            // Assert
+            Assert.IsTrue(_db.CustomColumnMappingTest.First().ColumnYIsDifferentInDatabase == 3);
+        }
+
+        [Test]
+        public void SqlBulkTools_Update_CustomColumnMapping()
+        {
+            BulkOperations bulk = new BulkOperations();
+
+            List<CustomColumnMappingTest> col = new List<CustomColumnMappingTest>();
+
+            for (int i = 0; i < 30; i++)
+            {
+                col.Add(new CustomColumnMappingTest() { NaturalId = i, ColumnXIsDifferent = "ColumnX " + i, ColumnYIsDifferentInDatabase = i });
+            }
+
+            var customColumn = new CustomColumnMappingTest()
+            {
+                NaturalId = 1,
+                ColumnXIsDifferent = "ColumnX " + 1,
+                ColumnYIsDifferentInDatabase = 1
+            };
+
+            _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
+            _db.SaveChanges();
+
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<CustomColumnMappingTest>()
+                        .ForSimpleInsertQuery(customColumn)
+                        .WithTable("CustomColumnMappingTests")
+                        .AddAllColumns()
+                        .CustomColumnMapping(x => x.ColumnXIsDifferent, "ColumnX")
+                        .CustomColumnMapping(x => x.ColumnYIsDifferentInDatabase, "ColumnY")
+                        .Insert()
+                        .Commit(conn);
+
+                    customColumn.ColumnXIsDifferent = "updated";
+                    
+
+                    bulk.Setup<CustomColumnMappingTest>()
+                        .ForSimpleUpdateQuery(customColumn)
+                        .WithTable("CustomColumnMappingTests")
+                        .AddAllColumns()
+                        .CustomColumnMapping(x => x.ColumnXIsDifferent, "ColumnX")
+                        .CustomColumnMapping(x => x.ColumnYIsDifferentInDatabase, "ColumnY")
+                        .Update()
+                        .Where(x => x.NaturalId == 1)
+                        .Commit(conn);
+                }
+
+                trans.Complete();
+            }
+
+            // Assert
+            Assert.IsTrue(_db.CustomColumnMappingTest.First().ColumnXIsDifferent == "updated");
+        }
     }
 }

@@ -51,7 +51,6 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _ext.SetBulkExt(this);
             _sqlParams = sqlParams;
             _outputIdentity = ColumnDirection.Input;
         }
@@ -128,6 +127,7 @@ namespace SqlBulkTools
 
             try
             {
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity, _customColumnMappings);
                 BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
                 SqlCommand command = connection.CreateCommand();
@@ -147,7 +147,7 @@ namespace SqlBulkTools
                     sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY();");
                 }
 
-                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+                
 
                 command.CommandText = sb.ToString();
 
@@ -210,6 +210,7 @@ namespace SqlBulkTools
 
             try
             {
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity, _customColumnMappings);
                 BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
                 SqlCommand command = connection.CreateCommand();
@@ -228,8 +229,6 @@ namespace SqlBulkTools
                 {
                     sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY();");
                 }
-
-                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
 
                 command.CommandText = sb.ToString();
 

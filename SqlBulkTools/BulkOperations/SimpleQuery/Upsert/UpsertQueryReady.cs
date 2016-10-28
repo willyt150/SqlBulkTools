@@ -48,9 +48,8 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-           // _ext.SetBulkExt(this);
             _sqlParams = sqlParams;
-            _matchTargetOn = string.Empty;
+            _matchTargetOn = null;
             _outputIdentity = ColumnDirection.Input;
         }
 
@@ -135,15 +134,17 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            if (_matchTargetOn == null)
+            if (string.IsNullOrWhiteSpace(_matchTargetOn))
                 throw new NullReferenceException("MatchTargetOn column name can't be null.");
 
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
-             
+                      
             try
             {
                 if (conn.State == ConnectionState.Closed)
                     conn.Open();
+
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity, _customColumnMappings);
+                BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
                 SqlCommand command = conn.CreateCommand();
                 command.Connection = conn;
@@ -161,9 +162,7 @@ namespace SqlBulkTools
                 if (_outputIdentity == ColumnDirection.InputOutput)
                 {
                     sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
-                }
-
-                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+                }          
 
                 command.CommandText = sb.ToString();
 
@@ -222,13 +221,14 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            if (_matchTargetOn == null)
+            if (string.IsNullOrWhiteSpace(_matchTargetOn))
                 throw new NullReferenceException("MatchTargetOn column name can't be null.");
-
-            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
             try
             {
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity, _customColumnMappings);
+                BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
+
                 if (conn.State == ConnectionState.Closed)
                     await conn.OpenAsync();
 
@@ -249,8 +249,6 @@ namespace SqlBulkTools
                 {
                     sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
                 }
-
-                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
 
                 command.CommandText = sb.ToString();
 
