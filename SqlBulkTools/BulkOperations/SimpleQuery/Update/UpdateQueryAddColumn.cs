@@ -34,7 +34,7 @@ namespace SqlBulkTools
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
         public UpdateQueryAddColumn(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, int transactionCount, string databaseIdentifier, List<string> concatTrans, List<SqlParameter> sqlParams)
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -43,9 +43,6 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
-            _transactionCount = transactionCount;
-            _databaseIdentifier = databaseIdentifier;
-            _concatTrans = concatTrans;
             _sqlParams = sqlParams;
         }
 
@@ -68,7 +65,7 @@ namespace SqlBulkTools
         /// <returns></returns>
         public UpdateQuery<T> Update()
         {
-            return new UpdateQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext, _transactionCount, _databaseIdentifier, _concatTrans, _sqlParams);
+            return new UpdateQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>

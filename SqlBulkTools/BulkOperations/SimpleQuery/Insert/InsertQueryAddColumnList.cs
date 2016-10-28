@@ -58,6 +58,26 @@ namespace SqlBulkTools
         }
 
         /// <summary>
+        /// Removes a column that you want to be excluded. 
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <returns></returns>
+        /// <exception cref="SqlBulkToolsException"></exception>
+        public InsertQueryAddColumnList<T> RemoveColumn(Expression<Func<T, object>> columnName)
+        {
+            var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
+            if (_columns.Contains(propertyName))
+                _columns.Remove(propertyName);
+
+            else
+                throw new SqlBulkToolsException("Could not remove the column with name "
+                    + columnName +
+                    ". This could be because it's not a value or string type and therefore not included.");
+
+            return this;
+        }
+
+        /// <summary>
         /// By default SqlBulkTools will attempt to match the model property names to SQL column names (case insensitive). 
         /// If any of your model property names do not match 
         /// the SQL table column(s) as defined in given table, then use this method to set up a custom mapping.  

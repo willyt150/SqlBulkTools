@@ -33,29 +33,6 @@ namespace SqlBulkTools
             return new BulkForCollection<T>(list, _ext);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="storedProcedureName"></param>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
-        public StoredProcedure ForStoredProcedure(string storedProcedureName, int timeout = 600)
-        {
-            return new StoredProcedure(_ext, storedProcedureName, timeout: timeout);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="storedProcedureName"></param>
-        /// <param name="sqlParameters"></param>
-        /// <param name="timeout"></param>
-        /// <returns></returns>
-        public StoredProcedure ForStoredProcedure(string storedProcedureName, IEnumerable<SqlParameter> sqlParameters = null, int timeout = 600)
-        {
-            return new StoredProcedure(_ext, storedProcedureName, sqlParameters: sqlParameters, timeout: timeout);
-        }
-
     }
 
     /// <summary>

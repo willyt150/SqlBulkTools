@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// <summary>
     /// 
     /// </summary>
-    public class BulkOperations : IBulkOperations
+    public class BulkOperations
     {
         private ITransaction _sqlBulkToolsTransaction;
         private SqlTransaction _sqlTransaction;
@@ -51,8 +51,8 @@ namespace SqlBulkTools
             if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
             
-
-            return _sqlBulkToolsTransaction.CommitTransaction(connectionName, credentials);
+            throw new NotImplementedException();
+            //return _sqlBulkToolsTransaction.CommitTransaction(connectionName, credentials);
         }
 
         /// <summary>
@@ -76,7 +76,8 @@ namespace SqlBulkTools
             if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return await _sqlBulkToolsTransaction.CommitTransactionAsync(connectionName, credentials);
+            throw new NotImplementedException();
+            //return await _sqlBulkToolsTransaction.CommitTransactionAsync(connectionName, credentials);
         }
 
 
@@ -95,7 +96,8 @@ namespace SqlBulkTools
             if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return _sqlBulkToolsTransaction.CommitTransaction(connection : connection);
+            throw new NotImplementedException();
+            //return _sqlBulkToolsTransaction.CommitTransaction(connection : connection);
         }
 
 
@@ -115,7 +117,8 @@ namespace SqlBulkTools
             if (_sqlBulkToolsTransaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return await _sqlBulkToolsTransaction.CommitTransactionAsync(connection : connection);
+            throw new NotImplementedException();
+            //return await _sqlBulkToolsTransaction.CommitTransactionAsync(connection : connection);
         }
 
         /// <summary>
@@ -149,30 +152,6 @@ namespace SqlBulkTools
         {
             return new Setup(this);
         }
-
-        public void Prepare(PreparingEnlistment preparingEnlistment)
-        {
-            preparingEnlistment.Prepared();
-        }
-
-        public void Commit(Enlistment enlistment)
-        {
-            enlistment.Done();
-        }
-
-        public void Rollback(Enlistment enlistment)
-        {
-            
-           // _sqlTransaction.Rollback();
-
-            enlistment.Done();
-        }
-
-        public void InDoubt(Enlistment enlistment)
-        {
-            enlistment.Done();
-        }
-
     }
 
 }

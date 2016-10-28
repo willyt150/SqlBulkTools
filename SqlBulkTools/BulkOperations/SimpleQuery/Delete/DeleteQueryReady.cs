@@ -35,14 +35,14 @@ namespace SqlBulkTools
         /// <param name="conditionSortOrder"></param>
         /// <param name="whereConditions"></param>
         /// <param name="parameters"></param>
-        public DeleteQueryReady(string tableName, string schema, 
+        public DeleteQueryReady(string tableName, string schema,
             int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> parameters)
         {
             _tableName = tableName;
             _schema = schema;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _ext.SetBulkExt(this);
+            // _ext.SetBulkExt(this);
             _whereConditions = whereConditions;
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
@@ -59,7 +59,7 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public DeleteQueryReady<T> And(Expression<Func<T, bool>> expression)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters, 
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.And, _andConditions, _parameters,
                 _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
@@ -73,111 +73,68 @@ namespace SqlBulkTools
         /// <exception cref="SqlBulkToolsException"></exception>
         public DeleteQueryReady<T> Or(Expression<Func<T, bool>> expression)
         {
-            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters, 
+            BulkOperationsHelper.AddPredicate(expression, PredicateType.Or, _orConditions, _parameters,
                 _conditionSortOrder, appendParam: Constants.UniqueParamIdentifier);
             _conditionSortOrder++;
             return this;
         }
 
-        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        public int Commit(SqlConnection connection)
         {
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-            
 
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
+
+            SqlCommand command = connection.CreateCommand();
+            command.Connection = connection;
+            command.CommandTimeout = _sqlTimeout;
+
+            string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(connection.Database, _schema,
+                _tableName);
+
+            string comm = $"DELETE FROM {fullQualifiedTableName} " +
+                          $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+            command.CommandText = comm;
+
+            if (_parameters.Count > 0)
             {
-                conn.Open();
-
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
-
-                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
-
-                        command.CommandText = comm;
-
-                        if (_parameters.Count > 0)
-                        {
-                            command.Parameters.AddRange(_parameters.ToArray());
-                        }
-
-                        int affectedRows = command.ExecuteNonQuery();
-                        transaction.Commit();
-
-                        return affectedRows;
-                    }
-
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
+                command.Parameters.AddRange(_parameters.ToArray());
             }
+
+            int affectedRows = command.ExecuteNonQuery();
+
+            return affectedRows;
         }
 
-        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        public async Task<int> CommitAsync(SqlConnection connection)
         {
             var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
 
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            if (connection.State == ConnectionState.Closed)
+                await connection.OpenAsync();
+
+            SqlCommand command = connection.CreateCommand();
+            command.Connection = connection;
+            command.CommandTimeout = _sqlTimeout;
+
+            string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(connection.Database, _schema,
+                _tableName);
+
+            string comm = $"DELETE FROM {fullQualifiedTableName} " +
+                          $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+            command.CommandText = comm;
+
+            if (_parameters.Count > 0)
             {
-                await conn.OpenAsync();
-
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
-
-                        string comm = $"DELETE FROM {fullQualifiedTableName} " +
-                                      $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
-
-                        command.CommandText = comm;
-
-                        if (_parameters.Count > 0)
-                        {
-                            command.Parameters.AddRange(_parameters.ToArray());
-                        }
-
-                        int affectedRows = await command.ExecuteNonQueryAsync();
-                        transaction.Commit();
-
-                        return affectedRows;
-                    }
-
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
+                command.Parameters.AddRange(_parameters.ToArray());
             }
+
+            int affectedRows = await command.ExecuteNonQueryAsync();
+
+            return affectedRows;
         }
     }
 }

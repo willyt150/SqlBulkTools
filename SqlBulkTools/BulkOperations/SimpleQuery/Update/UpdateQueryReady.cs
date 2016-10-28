@@ -42,7 +42,7 @@ namespace SqlBulkTools
         /// <param name="ext"></param>
         /// <param name="conditionSortOrder"></param>
         /// <param name="whereConditions"></param>
-        public UpdateQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
+        public UpdateQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings,
             int sqlTimeout, BulkOperations ext, int conditionSortOrder, List<Condition> whereConditions, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
@@ -53,8 +53,8 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _conditionSortOrder = conditionSortOrder;
-            _ext.SetBulkExt(this);
-            _whereConditions = whereConditions;  
+            //_ext.SetBulkExt(this);
+            _whereConditions = whereConditions;
             _andConditions = new List<Condition>();
             _orConditions = new List<Condition>();
             _sqlParams = sqlParams;
@@ -111,7 +111,7 @@ namespace SqlBulkTools
             return this;
         }
 
-        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        public int Commit(SqlConnection connection)
         {
             int affectedRows = 0;
             if (_singleEntity == null)
@@ -119,62 +119,42 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            if (connection.State == ConnectionState.Closed)
+                connection.Open();
+
+
+            SqlCommand command = connection.CreateCommand();
+            command.Connection = connection;
+            command.CommandTimeout = _sqlTimeout;
+
+            string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(connection.Database, _schema,
+                _tableName);
+
+
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
+
+            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            string comm = $"UPDATE {fullQualifiedTableName} " +
+            $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
+            $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+            command.CommandText = comm;
+
+            if (_sqlParams.Count > 0)
             {
-                conn.Open();
-
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
-
-
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
-
-                        var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                        $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
-                        $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
-
-                        command.CommandText = comm;
-
-                        if (_sqlParams.Count > 0)
-                        {
-                            command.Parameters.AddRange(_sqlParams.ToArray());
-                        }                       
-
-                        affectedRows = command.ExecuteNonQuery();
-                        transaction.Commit();
-
-                        return affectedRows;
-                    }
-
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
+                command.Parameters.AddRange(_sqlParams.ToArray());
             }
+
+            affectedRows = command.ExecuteNonQuery();
+
+            return affectedRows;
         }
 
-        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        public async Task<int> CommitAsync(SqlConnection connection)
         {
             int affectedRows = 0;
             if (_singleEntity == null)
@@ -182,57 +162,39 @@ namespace SqlBulkTools
                 return affectedRows;
             }
 
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            if (connection.State == ConnectionState.Closed)
+                await connection.OpenAsync();
+
+
+            SqlCommand command = connection.CreateCommand();
+            command.Connection = connection;
+            command.CommandTimeout = _sqlTimeout;
+
+            string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(connection.Database, _schema,
+                _tableName);
+
+
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
+            BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
+
+            BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
+
+            var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
+            string comm = $"UPDATE {fullQualifiedTableName} " +
+            $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
+            $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
+
+            command.CommandText = comm;
+
+            if (_sqlParams.Count > 0)
             {
-                await conn.OpenAsync();
-
-                using (SqlTransaction transaction = conn.BeginTransaction())
-                {
-                    try
-                    {
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema,
-                            _tableName);
-
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _whereConditions);
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _orConditions);
-                        BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _andConditions);
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity);
-
-                        var concatenatedQuery = _whereConditions.Concat(_andConditions).Concat(_orConditions).OrderBy(x => x.SortOrder);
-                        string comm = $"UPDATE {fullQualifiedTableName} " +
-                        $"{BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)}" +
-                        $"{BulkOperationsHelper.BuildPredicateQuery(concatenatedQuery)}";
-
-                        command.CommandText = comm;
-
-                        if (_sqlParams.Count > 0)
-                        {
-                            command.Parameters.AddRange(_sqlParams.ToArray());
-                        }
-
-                        affectedRows = await command.ExecuteNonQueryAsync();
-                        transaction.Commit();
-
-                        return affectedRows;
-                    }
-
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        conn.Close();
-                    }
-                }
+                command.Parameters.AddRange(_sqlParams.ToArray());
             }
+
+            affectedRows = await command.ExecuteNonQueryAsync();
+
+            return affectedRows;
         }
     }
 }

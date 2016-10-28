@@ -10,7 +10,7 @@ namespace SqlBulkTools
     /// 
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public class UpsertQueryAddColumnList<T>
+    public class UpdateQueryAddColumnList<T>
     {
         private readonly T _singleEntity;
         private readonly string _tableName;
@@ -19,11 +19,7 @@ namespace SqlBulkTools
         private readonly string _schema;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
-        private List<SqlParameter> _parameters;
-        private List<string> _concatTrans;
-        private string _databaseIdentifier;
         private List<SqlParameter> _sqlParams;
-        private int _transactionCount;
 
         /// <summary>
         /// 
@@ -34,12 +30,8 @@ namespace SqlBulkTools
         /// <param name="schema"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        /// <param name="concatTrans"></param>
-        /// <param name="databaseIdentifier"></param>
-        /// <param name="sqlParams"></param>
-        /// <param name="insertMode"></param>
-        public UpsertQueryAddColumnList(T singleEntity, string tableName, HashSet<string> columns, string schema,
-            int sqlTimeout, BulkOperations ext, List<string> concatTrans, string databaseIdentifier, List<SqlParameter> sqlParams, int transactionCount)
+        public UpdateQueryAddColumnList(T singleEntity, string tableName, HashSet<string> columns, string schema,
+            int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
             _singleEntity = singleEntity;
             _tableName = tableName;
@@ -48,21 +40,16 @@ namespace SqlBulkTools
             _sqlTimeout = sqlTimeout;
             _ext = ext;
             _customColumnMappings = new Dictionary<string, string>();
-            _parameters = new List<SqlParameter>();
-            _concatTrans = concatTrans;
-            _databaseIdentifier = databaseIdentifier;
             _sqlParams = sqlParams;
-            _transactionCount = transactionCount;
         }
 
         /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>
-        public UpsertQueryReady<T> Upsert()
+        public UpdateQuery<T> Update()
         {
-            return new UpsertQueryReady<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings,
-                _sqlTimeout, _ext, _sqlParams);
+            return new UpdateQuery<T>(_singleEntity, _tableName, _schema, _columns, _customColumnMappings, _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>
@@ -71,7 +58,7 @@ namespace SqlBulkTools
         /// <param name="columnName"></param>
         /// <returns></returns>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public UpsertQueryAddColumnList<T> RemoveColumn(Expression<Func<T, object>> columnName)
+        public UpdateQueryAddColumnList<T> RemoveColumn(Expression<Func<T, object>> columnName)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             if (_columns.Contains(propertyName))
@@ -97,7 +84,7 @@ namespace SqlBulkTools
         /// The actual name of column as represented in SQL table. 
         /// </param>
         /// <returns></returns>
-        public UpsertQueryAddColumnList<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
+        public UpdateQueryAddColumnList<T> CustomColumnMapping(Expression<Func<T, object>> source, string destination)
         {
             var propertyName = BulkOperationsHelper.GetPropertyName(source);
             _customColumnMappings.Add(propertyName, destination);

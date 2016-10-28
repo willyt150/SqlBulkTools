@@ -55,7 +55,19 @@ namespace SqlBulkTools
             var propertyName = BulkOperationsHelper.GetPropertyName(columnName);
             Columns.Add(propertyName);
             return new UpdateQueryAddColumn<T>(_singleEntity, _tableName, Columns, _schema, 
-                _sqlTimeout, _ext, _transactionCount, _databaseIdentifier, _concatTrans, _sqlParams);
+                _sqlTimeout, _ext, _sqlParams);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public UpdateQueryAddColumnList<T> AddAllColumns()
+        {
+            Columns = BulkOperationsHelper.GetAllValueTypeAndStringColumns(typeof(T));
+
+            return new UpdateQueryAddColumnList<T>(_singleEntity, _tableName, Columns, _schema,
+                _sqlTimeout, _ext, _sqlParams);
         }
 
         /// <summary>

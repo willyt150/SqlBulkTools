@@ -877,10 +877,10 @@ namespace SqlBulkTools
             return dtCols;
         }
 
-        internal static void InsertToTmpTable(SqlConnection conn, SqlTransaction transaction, DataTable dt, bool bulkCopyEnableStreaming,
+        internal static void InsertToTmpTable(SqlConnection conn, DataTable dt, bool bulkCopyEnableStreaming,
             int? bulkCopyBatchSize, int? bulkCopyNotifyAfter, int bulkCopyTimeout, SqlBulkCopyOptions sqlBulkCopyOptions, IEnumerable<SqlRowsCopiedEventHandler> bulkCopyDelegates)
         {
-            using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, transaction))
+            using (SqlBulkCopy bulkcopy = new SqlBulkCopy(conn, sqlBulkCopyOptions, null))
             {
                 bulkcopy.DestinationTableName = Constants.TempTableName;
 

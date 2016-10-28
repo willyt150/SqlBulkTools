@@ -58,6 +58,7 @@
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryTable.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryObject.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Insert\InsertQueryReady.cs" />
+    <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryAddColumnList.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQuery.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryTable.cs" />
@@ -66,7 +67,6 @@
     <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryObject.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryReady.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Upsert\UpsertQueryTable.cs" />
-    <Compile Include="BulkOperations\StoredProcedure\StoredProcedure.cs" />
     <Compile Include="Helper\Condition.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryObject.cs" />
     <Compile Include="BulkOperations\SimpleQuery\Update\UpdateQueryAddColumn.cs" />

@@ -2,13 +2,10 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
-using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading.Tasks;
-using System.Transactions;
 
 // ReSharper disable once CheckNamespace
 namespace SqlBulkTools
@@ -26,7 +23,6 @@ namespace SqlBulkTools
         private readonly Dictionary<string, string> _customColumnMappings;
         private readonly int _sqlTimeout;
         private readonly BulkOperations _ext;
-        private int _conditionSortOrder;
         private string _identityColumn;
         private List<SqlParameter> _sqlParams;
         private string _matchTargetOn;
@@ -42,9 +38,6 @@ namespace SqlBulkTools
         /// <param name="customColumnMappings"></param>
         /// <param name="sqlTimeout"></param>
         /// <param name="ext"></param>
-        /// <param name="conditionSortOrder"></param>
-        /// <param name="whereConditions"></param>
-        /// <param name="parameters"></param>
         public UpsertQueryReady(T singleEntity, string tableName, string schema, HashSet<string> columns, Dictionary<string, string> customColumnMappings, 
             int sqlTimeout, BulkOperations ext, List<SqlParameter> sqlParams)
         {
@@ -55,7 +48,7 @@ namespace SqlBulkTools
             _customColumnMappings = customColumnMappings;
             _sqlTimeout = sqlTimeout;
             _ext = ext;
-            _ext.SetBulkExt(this);
+           // _ext.SetBulkExt(this);
             _sqlParams = sqlParams;
             _matchTargetOn = string.Empty;
             _outputIdentity = ColumnDirection.Input;
@@ -127,7 +120,14 @@ namespace SqlBulkTools
             return this;
         }
 
-        int ITransaction.CommitTransaction(string connectionName, SqlCredential credentials, SqlConnection connection)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        /// <exception cref="IdentityException"></exception>
+        public int Commit(SqlConnection conn)
         {
             int affectedRows = 0;
             if (_singleEntity == null)
@@ -139,98 +139,82 @@ namespace SqlBulkTools
                 throw new NullReferenceException("MatchTargetOn column name can't be null.");
 
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
-            
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+             
+            try
             {
-                conn.Open();
+                if (conn.State == ConnectionState.Closed)
+                    conn.Open();
 
-                //using (SqlTransaction transaction = conn.BeginTransaction())
-                //{                   
-                    try
+                SqlCommand command = conn.CreateCommand();
+                command.Connection = conn;
+                command.CommandTimeout = _sqlTimeout;
+
+                string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
+                  $"IF (@@ROWCOUNT = 0) BEGIN " +
+                  $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                  $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
+                  $"END ");
+
+                if (_outputIdentity == ColumnDirection.InputOutput)
+                {
+                    sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                }
+
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                command.CommandText = sb.ToString();
+
+                if (_sqlParams.Count > 0)
+                {
+                    command.Parameters.AddRange(_sqlParams.ToArray());
+                }
+
+                affectedRows = command.ExecuteNonQuery();
+
+                if (_outputIdentity == ColumnDirection.InputOutput)
+                {
+                    foreach (var x in _sqlParams)
                     {
-                        
-                        //_ext.SetTransaction(transaction);
-
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        //command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
-                        StringBuilder sb = new StringBuilder();
-
-                        sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
-                          $"IF (@@ROWCOUNT = 0) BEGIN " +
-                          $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
-                          $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
-                          $"END ");
-
-                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        if (x.Direction == ParameterDirection.Output
+                            && x.ParameterName == $"@{_identityColumn}")
                         {
-                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                            PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                            propertyInfo.SetValue(_singleEntity, x.Value);
+                            break;
                         }
-
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
-
-                        command.CommandText = sb.ToString();
-
-                        if (_sqlParams.Count > 0)
-                        {
-                            command.Parameters.AddRange(_sqlParams.ToArray());
-                        }
-
-                        affectedRows = command.ExecuteNonQuery();
-
-                        if (_outputIdentity == ColumnDirection.InputOutput)
-                        {
-                            foreach (var x in _sqlParams)
-                            {
-                                if (x.Direction == ParameterDirection.Output 
-                                    && x.ParameterName == $"@{_identityColumn}")
-                                {
-                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
-                                    propertyInfo.SetValue(_singleEntity, x.Value);
-                                    break;
-                                }
-                            }
-                        }
-
-                        //transaction.Commit();
-
-                        return affectedRows;
                     }
+                }
 
-                    catch (SqlException e)
+                return affectedRows;
+            }
+
+            catch (SqlException e)
+            {
+                for (int i = 0; i < e.Errors.Count; i++)
+                {
+                    // Error 8102 is identity error. 
+                    if (e.Errors[i].Number == 544)
                     {
-                        for (int i = 0; i < e.Errors.Count; i++)
-                        {
-                            // Error 8102 is identity error. 
-                            if (e.Errors[i].Number == 544)
-                            {
-                                // Expensive but neccessary to inform user of an important configuration setup. 
-                                throw new IdentityException(e.Errors[i].Message);
-                            }
-                        }
-
-                        //transaction.Rollback();
-                        throw;
+                        // Expensive but neccessary to inform user of an important configuration setup. 
+                        throw new IdentityException(e.Errors[i].Message);
                     }
+                }
 
-                    catch (Exception)
-                    {
-                        //transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        //conn.Close();
-                    }
-              //  }
+                throw;
             }
         }
 
-        async Task<int> ITransaction.CommitTransactionAsync(string connectionName, SqlCredential credentials, SqlConnection connection)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <returns></returns>
+        /// <exception cref="NullReferenceException"></exception>
+        /// <exception cref="IdentityException"></exception>
+        public async Task<int> CommitAsync(SqlConnection conn)
         {
             int affectedRows = 0;
             if (_singleEntity == null)
@@ -243,91 +227,70 @@ namespace SqlBulkTools
 
             BulkOperationsHelper.DoColumnMappings(_customColumnMappings, _columns);
 
-            using (SqlConnection conn = BulkOperationsHelper.GetSqlConnection(connectionName, credentials, connection))
+            try
             {
-                await conn.OpenAsync();
+                if (conn.State == ConnectionState.Closed)
+                    await conn.OpenAsync();
 
-                using (SqlTransaction transaction = conn.BeginTransaction())
+                SqlCommand command = conn.CreateCommand();
+                command.Connection = conn;
+                command.CommandTimeout = _sqlTimeout;
+
+                string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
+                StringBuilder sb = new StringBuilder();
+
+                sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
+                  $"IF (@@ROWCOUNT = 0) BEGIN " +
+                  $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
+                  $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
+                  $"END ");
+
+                if (_outputIdentity == ColumnDirection.InputOutput)
                 {
-                    try
+                    sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                }
+
+                BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
+
+                command.CommandText = sb.ToString();
+
+                if (_sqlParams.Count > 0)
+                {
+                    command.Parameters.AddRange(_sqlParams.ToArray());
+                }
+
+                affectedRows = await command.ExecuteNonQueryAsync();
+
+                if (_outputIdentity == ColumnDirection.InputOutput)
+                {
+                    foreach (var x in _sqlParams)
                     {
-                        SqlCommand command = conn.CreateCommand();
-                        command.Connection = conn;
-                        command.Transaction = transaction;
-                        command.CommandTimeout = _sqlTimeout;
-
-                        string fullQualifiedTableName = BulkOperationsHelper.GetFullQualifyingTableName(conn.Database, _schema, _tableName);
-                        StringBuilder sb = new StringBuilder();
-
-                        sb.Append($"UPDATE {fullQualifiedTableName} {BulkOperationsHelper.BuildUpdateSet(_columns, _identityColumn)} " +
-                                  $"WHERE [{_matchTargetOn}] = @{_matchTargetOn} " +
-                                  $"IF (@@ROWCOUNT = 0) BEGIN " +
-                                  $"{ BulkOperationsHelper.BuildInsertIntoSet(_columns, _identityColumn, fullQualifiedTableName)} " +
-                                  $"VALUES{BulkOperationsHelper.BuildValueSet(_columns, _identityColumn)} " +
-                                  $"END ");
-
-                        if (_outputIdentity == ColumnDirection.InputOutput)
+                        if (x.Direction == ParameterDirection.Output
+                            && x.ParameterName == $"@{_identityColumn}")
                         {
-                            sb.Append($"SET @{_identityColumn}=SCOPE_IDENTITY()");
+                            PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
+                            propertyInfo.SetValue(_singleEntity, x.Value);
+                            break;
                         }
-
-                        BulkOperationsHelper.AddSqlParamsForQuery(_sqlParams, _columns, _singleEntity, _identityColumn, _outputIdentity);
-
-                        command.CommandText = sb.ToString();
-
-                        if (_sqlParams.Count > 0)
-                        {
-                            command.Parameters.AddRange(_sqlParams.ToArray());
-                        }
-
-                        affectedRows = await command.ExecuteNonQueryAsync();
-
-                        if (_outputIdentity == ColumnDirection.InputOutput)
-                        {
-                            foreach (var x in _sqlParams)
-                            {
-                                if (x.Direction == ParameterDirection.Output
-                                    && x.ParameterName == $"@{_identityColumn}")
-                                {
-                                    PropertyInfo propertyInfo = _singleEntity.GetType().GetProperty(_identityColumn);
-                                    propertyInfo.SetValue(_singleEntity, x.Value);
-                                    break;
-                                }
-                            }
-                        }
-
-                        transaction.Commit();
-
-                        return affectedRows;
-                    }
-
-                    catch (SqlException e)
-                    {
-                        for (int i = 0; i < e.Errors.Count; i++)
-                        {
-                            // Error 8102 is identity error. 
-                            if (e.Errors[i].Number == 544)
-                            {
-                                // Expensive but neccessary to inform user of an important configuration setup. 
-                                throw new IdentityException(e.Errors[i].Message);
-                            }
-                        }
-
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    catch (Exception)
-                    {
-                        transaction.Rollback();
-                        throw;
-                    }
-
-                    finally
-                    {
-                        conn.Close();
                     }
                 }
+
+                return affectedRows;
+            }
+
+            catch (SqlException e)
+            {
+                for (int i = 0; i < e.Errors.Count; i++)
+                {
+                    // Error 8102 is identity error. 
+                    if (e.Errors[i].Number == 544)
+                    {
+                        // Expensive but neccessary to inform user of an important configuration setup. 
+                        throw new IdentityException(e.Errors[i].Message);
+                    }
+                }
+
+                throw;
             }
         }
     }

@@ -417,11 +417,10 @@ namespace SqlBulkTools.IntegrationTests
             _db.SaveChanges();
             using (TransactionScope tx = new TransactionScope())
             {
-                
-
                 using (SqlConnection con = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
+                                       
                     var bulk = new BulkOperations();
                     bulk.Setup<Book>()
                     .ForSimpleUpsertQuery(new Book()
@@ -434,40 +433,14 @@ namespace SqlBulkTools.IntegrationTests
                     })
                     .WithTable("Books")
                     .AddAllColumns()
-                    .Insert()
+                    .Upsert()
                     .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
-                    .MatchTargetOn(x => x.Id);
-
-                    int insertedRecords = bulk.CommitTransaction(con);
-
-                    using (SqlConnection con2 = new SqlConnection(ConfigurationManager
-                        .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
-                    {
-
-
-                        bulk = new BulkOperations();
-                        bulk.Setup<Book>()
-                            .ForSimpleUpsertQuery(new Book()
-                            {
-                                BestSeller = true,
-                                Description = "Greatest dad in the world",
-                                Title = "Hello World",
-                                ISBN = "1234567",
-                                Price = 23.99M
-                            })
-                            .WithTable("Books")
-                            .AddAllColumns()
-                            .Insert()
-                            .MatchTargetOn(x => x.Id);
-
-                        insertedRecords = bulk.CommitTransaction(con2);
-                    }
+                    .MatchTargetOn(x => x.Id)
+                    .Commit(con);
                 }
-
 
                 tx.Complete();
             }
-
 
             Assert.AreEqual(1, _db.Books.Count());
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
@@ -501,24 +474,31 @@ namespace SqlBulkTools.IntegrationTests
 
             //TODO use output identity column
             var insertedId = _db.Books.First().Id;
-
-            bulk.Setup<Book>()
-                .ForSimpleUpsertQuery(new Book()
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection con = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    Id = insertedId,
-                    BestSeller = true,
-                    Description = "Greatest dad in the world",
-                    Title = "Hello Greggo",
-                    ISBN = "1234567",
-                    Price = 23.99M
-                })
-                .WithTable("Books")
-                .AddAllColumns()
-                .Insert()
-                .SetIdentityColumn(x => x.Id)
-                .MatchTargetOn(x => x.Id);
+                    bulk.Setup<Book>()
+                    .ForSimpleUpsertQuery(new Book()
+                    {
+                        Id = insertedId,
+                        BestSeller = true,
+                        Description = "Greatest dad in the world",
+                        Title = "Hello Greggo",
+                        ISBN = "1234567",
+                        Price = 23.99M
+                    })
+                    .WithTable("Books")
+                    .AddAllColumns()
+                    .Upsert()
+                    .SetIdentityColumn(x => x.Id)
+                    .MatchTargetOn(x => x.Id)
+                    .Commit(con);
+                }
 
-            insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.AreEqual(1, _db.Books.Count());
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.Title == "Hello Greggo"));
