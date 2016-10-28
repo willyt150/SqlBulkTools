@@ -342,7 +342,8 @@ namespace SqlBulkTools.IntegrationTests
                         .WithTable("Books")
                         .AddAllColumns()
                         .BulkUpdate()
-                        .MatchTargetOn(x => x.Id);
+                        .MatchTargetOn(x => x.Id)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -378,7 +379,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddAllColumns()
                         .BulkUpdate()
                         .SetIdentityColumn(x => x.Id)
-                        .MatchTargetOn(x => x.Id);
+                        .MatchTargetOn(x => x.Id)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -410,14 +412,16 @@ namespace SqlBulkTools.IntegrationTests
                         .WithTable("SchemaTest")
                         .WithSchema("AnotherSchema")
                         .AddAllColumns()
-                        .BulkDelete(); // Remove existing rows
+                        .BulkDelete()
+                        .Commit(conn); // Remove existing rows
 
                     bulk.Setup<SchemaTest2>()
                         .ForCollection(conflictingSchemaCol)
                         .WithTable("SchemaTest")
                         .WithSchema("AnotherSchema")
                         .AddAllColumns()
-                        .BulkInsert(); // Add new rows
+                        .BulkInsert()
+                        .Commit(conn); // Add new rows
 
                 }
 
@@ -452,7 +456,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(col)
                         .WithTable("SchemaTest") // Don't specify schema. Default schema dbo is used. 
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     var allItems = _db.SchemaTest1.ToList();
 
@@ -461,7 +466,8 @@ namespace SqlBulkTools.IntegrationTests
                         .WithTable("SchemaTest")
                         .AddColumn(x => x.Id)
                         .BulkDelete()
-                        .MatchTargetOn(x => x.Id);
+                        .MatchTargetOn(x => x.Id)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -501,7 +507,8 @@ namespace SqlBulkTools.IntegrationTests
                         .WithTable("Books")
                         .AddColumn(x => x.Price)
                         .BulkUpdate()
-                        .MatchTargetOn(x => x.ISBN);
+                        .MatchTargetOn(x => x.ISBN)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -565,11 +572,8 @@ namespace SqlBulkTools.IntegrationTests
                 col.Add(new CustomColumnMappingTest() { NaturalId = i, ColumnXIsDifferent = "ColumnX " + i, ColumnYIsDifferentInDatabase = i });
             }
 
-            using (TestContext db = new TestContext())
-            {
-                db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
-                db.SaveChanges();
-            }
+            _db.CustomColumnMappingTest.RemoveRange(_db.CustomColumnMappingTest.ToList());
+            _db.SaveChanges();
 
             using (TransactionScope trans = new TransactionScope())
             {
@@ -620,7 +624,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddAllColumns()
                         .BulkInsertOrUpdate()
                         .MatchTargetOn(x => x.Id)
-                        .SetIdentityColumn(x => x.Id);
+                        .SetIdentityColumn(x => x.Id)
+                        .Commit(conn);
 
                 }
 
@@ -650,7 +655,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddAllColumns()
                         .BulkInsertOrUpdate()
                         .MatchTargetOn(x => x.ISBN)
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection
+                        .InputOutput).Commit(conn);
                 }
 
                 trans.Complete();
@@ -685,9 +691,9 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.Title)
                         .AddColumn(x => x.Price)
                         .BulkInsertOrUpdate()
-
                         .MatchTargetOn(x => x.ISBN)
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -722,7 +728,8 @@ namespace SqlBulkTools.IntegrationTests
                         .WithTable("Books")
                         .AddAllColumns()
                         .BulkInsert()
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
 
                 }
 
@@ -763,7 +770,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.PublishDate)
                         .TmpDisableAllNonClusteredIndexes()
                         .BulkInsert()
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
 
                 }
 
@@ -812,7 +820,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.ISBN)
                         .BulkDelete()
                         .MatchTargetOn(x => x.ISBN)
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -823,9 +832,6 @@ namespace SqlBulkTools.IntegrationTests
 
             Assert.AreEqual(expected, test.Id);
         }
-
-
-
 
         [Test]
         public void SqlBulkTools_BulkUpdateWithSelectedColumns_TestIdentityOutput()
@@ -851,7 +857,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.Price)
                         .BulkUpdate()
                         .MatchTargetOn(x => x.ISBN)
-                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -876,18 +883,22 @@ namespace SqlBulkTools.IntegrationTests
                 using (SqlConnection conn = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    bulk.Setup<Book>()
-                        .ForCollection(books)
-                        .WithTable("Books")
-                        .AddColumn(x => x.ISBN)
-                        .AddColumn(x => x.InvalidType)
-                        .BulkInsert();
+                    Assert.Throws<SqlBulkToolsException>(() => bulk.Setup<Book>()
+                                .ForCollection(books)
+                                .WithTable("Books")
+                                .AddColumn(x => x.ISBN)
+                                .AddColumn(x => x.InvalidType)
+                                .BulkInsert()
+                                .Commit(conn), "Only value, string, char[], byte[] and SqlXml " +
+                                               "types can be used with SqlBulkTools. Refer to " +
+                                               "https://msdn.microsoft.com/en-us/library/cc716729(v=vs.110).aspx for" +
+                                               " more details.");
                 }
 
                 trans.Complete();
             }
 
-            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"));
+
         }
 
         [Test]
@@ -914,7 +925,8 @@ namespace SqlBulkTools.IntegrationTests
                     .AddColumn(x => x.ISBN)
                     .AddColumn(x => x.Price)
                     .BulkInsert()
-                    .SetIdentityColumn(x => x.Id);
+                    .SetIdentityColumn(x => x.Id)
+                    .Commit(conn);
 
                 }
 
@@ -938,24 +950,26 @@ namespace SqlBulkTools.IntegrationTests
                 using (SqlConnection conn = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    bulk.Setup()
-                    .ForCollection(
-                        _bookCollection.Select(
-                            x => new { x.Description, x.ISBN, x.Id, x.Price }))
-                    .WithTable("Books")
-                    .AddColumn(x => x.Id)
-                    .AddColumn(x => x.Description)
-                    .AddColumn(x => x.ISBN)
-                    .AddColumn(x => x.Price)
-                    .BulkInsert()
-                    .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+
+                    Assert.Throws<SqlBulkToolsException>(() =>
+                        bulk.Setup()
+                            .ForCollection(
+                                _bookCollection.Select(
+                                    x => new {x.Description, x.ISBN, x.Id, x.Price}))
+                            .WithTable("Books")
+                            .AddColumn(x => x.Id)
+                            .AddColumn(x => x.Description)
+                            .AddColumn(x => x.ISBN)
+                            .AddColumn(x => x.Price)
+                            .BulkInsert()
+                            .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                            .Commit(conn),
+                        "No setter method available on property 'Id'. Could not write output back to property.");
                 }
 
                 trans.Complete();
             }
 
-            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"),
-                "No setter method available on property 'Id'. Could not write output back to property.");
         }
 
         [Test]
@@ -981,23 +995,22 @@ namespace SqlBulkTools.IntegrationTests
                 using (SqlConnection conn = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    bulk.Setup<BookWithPrivateIdentity>()
-                    .ForCollection(booksWithPrivateIdentity)
-                    .WithTable("Books")
-                    .AddColumn(x => x.Id)
-                    .AddColumn(x => x.Description)
-                    .AddColumn(x => x.ISBN)
-                    .AddColumn(x => x.Price)
-                    .BulkInsertOrUpdate()
-                    .MatchTargetOn(x => x.ISBN)
-                    .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
+                    Assert.Throws<SqlBulkToolsException>(() => bulk.Setup<BookWithPrivateIdentity>()
+                            .ForCollection(booksWithPrivateIdentity)
+                            .WithTable("Books")
+                            .AddColumn(x => x.Id)
+                            .AddColumn(x => x.Description)
+                            .AddColumn(x => x.ISBN)
+                            .AddColumn(x => x.Price)
+                            .BulkInsertOrUpdate()
+                            .MatchTargetOn(x => x.ISBN)
+                            .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                            .Commit(conn),
+                        "No setter method available on property 'Id'. Could not write output back to property.");
                 }
 
                 trans.Complete();
             }
-
-            Assert.Throws<SqlBulkToolsException>(() => bulk.CommitTransaction("SqlBulkToolsTest"),
-                "No setter method available on property 'Id'. Could not write output back to property.");
         }
 
         [Test]
@@ -1031,9 +1044,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
-
-                    Assert.AreEqual(books.Count, _db.Books.Count());
+                        .BulkInsert()
+                        .Commit(conn);
 
                     books = _randomizer.GetRandomCollection(30);
 
@@ -1058,7 +1070,8 @@ namespace SqlBulkTools.IntegrationTests
                         .MatchTargetOn(x => x.ISBN)
                         .DeleteWhen(x => x.WarehouseId == 1)
                         .DeleteWhenNotMatched(true)
-                        .SetIdentityColumn(x => x.Id);
+                        .SetIdentityColumn(x => x.Id)
+                        .Commit(conn);
 
                 }
 
@@ -1103,7 +1116,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     for (int i = 0; i < books.Count; i++)
                     {
@@ -1118,7 +1132,8 @@ namespace SqlBulkTools.IntegrationTests
                         .BulkUpdate()
                         .MatchTargetOn(x => x.ISBN)
                         .SetIdentityColumn(x => x.Id)
-                        .UpdateWhen(x => x.WarehouseId == 1);
+                        .UpdateWhen(x => x.WarehouseId == 1)
+                        .Commit(conn);
 
                 }
 
@@ -1152,7 +1167,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     books[17].Price = 1234567;
 
@@ -1163,7 +1179,8 @@ namespace SqlBulkTools.IntegrationTests
                         .BulkUpdate()
                         .MatchTargetOn(x => x.ISBN)
                         .SetIdentityColumn(x => x.Id)
-                        .UpdateWhen(x => x.BestSeller == true);
+                        .UpdateWhen(x => x.BestSeller == true)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -1198,7 +1215,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     books[17].Price = 1234567;
 
@@ -1209,7 +1227,8 @@ namespace SqlBulkTools.IntegrationTests
                         .BulkUpdate()
                         .MatchTargetOn(x => x.ISBN)
                         .SetIdentityColumn(x => x.Id)
-                        .UpdateWhen(x => x.BestSeller == false);
+                        .UpdateWhen(x => x.BestSeller == false)
+                        .Commit(conn);
 
                 }
 
@@ -1248,9 +1267,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
-
-                    bulk.CommitTransaction("SqlBulkToolsTest");
+                        .BulkInsert()
+                        .Commit(conn);
 
                     books[0].Price = 17;
 
@@ -1261,9 +1279,9 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.Price)
                         .BulkUpdate()
                         .MatchTargetOn(x => x.ISBN)
-                        .UpdateWhen(x => x.Price <= 20);
+                        .UpdateWhen(x => x.Price <= 20).Commit(conn);
 
-                    bulk.CommitTransaction("SqlBulkToolsTest");
+
                 }
 
                 trans.Complete();
@@ -1305,7 +1323,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     // Only delete if warehouse is 1
                     bulk.Setup()
@@ -1314,7 +1333,8 @@ namespace SqlBulkTools.IntegrationTests
                         .AddColumn(x => x.ISBN)
                         .BulkDelete()
                         .MatchTargetOn(x => x.ISBN)
-                        .DeleteWhen(x => x.WarehouseId == 1);
+                        .DeleteWhen(x => x.WarehouseId == 1)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
@@ -1356,7 +1376,8 @@ namespace SqlBulkTools.IntegrationTests
                         .ForCollection(books)
                         .WithTable("Books")
                         .AddAllColumns()
-                        .BulkInsert();
+                        .BulkInsert()
+                        .Commit(conn);
 
                     // Only delete when price more than 10 and description is null
                     bulk.Setup()
@@ -1366,7 +1387,8 @@ namespace SqlBulkTools.IntegrationTests
                         .BulkDelete()
                         .MatchTargetOn(x => x.ISBN)
                         .DeleteWhen(x => x.Price > 10)
-                        .DeleteWhen(x => x.Description == null);
+                        .DeleteWhen(x => x.Description == null)
+                        .Commit(conn);
                 }
 
                 trans.Complete();
