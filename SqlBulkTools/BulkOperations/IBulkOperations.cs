@@ -14,13 +14,15 @@ namespace SqlBulkTools
         /// 
         /// </summary>
         /// <param name="connection"></param>
-        int CommitTransaction(SqlConnection connection);
+        /// <param name="transaction"></param>
+        int CommitTransaction(SqlConnection connection, SqlTransaction transaction = null);
         /// <summary>
         /// 
         /// </summary>
         /// <param name="connection"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
-        Task<int> CommitTransactionAsync(SqlConnection connection);
+        Task<int> CommitTransactionAsync(SqlConnection connection, SqlTransaction transaction = null);
         /// <summary>
         /// 
         /// </summary>

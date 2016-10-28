@@ -72,9 +72,10 @@ namespace SqlBulkTools
         /// successful. 
         /// </summary>
         /// <param name="connection"></param>
+        /// <param name="transaction"></param>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public int CommitTransaction(SqlConnection connection)
+        public int CommitTransaction(SqlConnection connection, SqlTransaction transaction = null)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
@@ -82,7 +83,7 @@ namespace SqlBulkTools
             if (_transaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return _transaction.CommitTransaction(connection : connection);
+            return _transaction.CommitTransaction(connection : connection, transaction: transaction);
         }
 
 
@@ -91,10 +92,11 @@ namespace SqlBulkTools
         /// successful. 
         /// </summary>
         /// <param name="connection"></param>
+        /// <param name="transaction"></param>
         /// <returns></returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="SqlBulkToolsException"></exception>
-        public async Task<int> CommitTransactionAsync(SqlConnection connection)
+        public async Task<int> CommitTransactionAsync(SqlConnection connection, SqlTransaction transaction = null)
         {
             if (connection == null)
                 throw new ArgumentNullException(nameof(connection));
@@ -102,7 +104,7 @@ namespace SqlBulkTools
             if (_transaction == null)
                 throw new SqlBulkToolsException("No setup found. Use the Setup method to build a new setup then try again.");
 
-            return await _transaction.CommitTransactionAsync(connection : connection);
+            return await _transaction.CommitTransactionAsync(connection : connection, transaction: transaction);
         }
 
         /// <summary>

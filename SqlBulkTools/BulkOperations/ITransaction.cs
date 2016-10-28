@@ -6,7 +6,7 @@ namespace SqlBulkTools
 {
     internal interface ITransaction
     {
-        int CommitTransaction(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null);
-        Task<int> CommitTransactionAsync(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null);
+        int CommitTransaction(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null, SqlTransaction transaction = null);
+        Task<int> CommitTransactionAsync(string connectionName = null, SqlCredential credentials = null, SqlConnection connection = null, SqlTransaction transaction = null);
     }
 }
