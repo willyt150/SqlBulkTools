@@ -1,4 +1,5 @@
 ﻿using System.Data.Entity;
+using System.Data.SqlClient;
 using SqlBulkTools.IntegrationTests.Model;
 
 namespace SqlBulkTools.IntegrationTests.Data
@@ -7,6 +8,11 @@ namespace SqlBulkTools.IntegrationTests.Data
     {
         public TestContext()
             : base("SqlBulkToolsTest")
+        {
+            this.Database.CommandTimeout = 150;
+        }
+
+        public TestContext(SqlConnection conn, bool contextOwnsConnection) : base(conn, contextOwnsConnection)
         {
             this.Database.CommandTimeout = 150;
         }

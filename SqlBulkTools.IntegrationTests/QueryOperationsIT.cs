@@ -49,26 +49,34 @@ namespace SqlBulkTools.IntegrationTests
             var bookToTest = books[5];
             bookToTest.Price = 50;
             var isbn = bookToTest.ISBN;
+            int updatedRecords = 0;
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+                    // Update price to 100
 
-            // Update price to 100
+                    updatedRecords = bulk.Setup<Book>()
+                        .ForSimpleUpdateQuery(new Book() { Price = 100 })
+                        .WithTable("Books")
+                        .AddColumn(x => x.Price)
+                        .Update()
+                        .Where(x => x.ISBN == isbn)
+                        .Commit(conn);
 
-            bulk.Setup<Book>()
-                .ForSimpleUpdateQuery(new Book() { Price = 100 })
-                .WithTable("Books")
-                .AddColumn(x => x.Price)
-                .Update()
-                .Where(x => x.ISBN == isbn);
+                }
 
-
-            int updatedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.IsTrue(updatedRecords == 1);
             Assert.AreEqual(100, _db.Books.Single(x => x.ISBN == isbn).Price);
@@ -87,30 +95,41 @@ namespace SqlBulkTools.IntegrationTests
             bookToTest.Price = 50;
             var isbn = bookToTest.ISBN;
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            int updatedRecords = 0;
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            // Update price to 100
-
-            bulk.Setup<Book>()
-                .ForSimpleUpdateQuery(new Book()
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    Price = 100,
-                    Description = "Somebody will want me now! Yay"
-                })
-                .WithTable("Books")
-                .AddColumn(x => x.Price)
-                .AddColumn(x => x.Description)
-                .Update()
-                .Where(x => x.ISBN == isbn);
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
+
+                    // Update price to 100
+
+                    updatedRecords = bulk.Setup<Book>()
+                        .ForSimpleUpdateQuery(new Book()
+                        {
+                            Price = 100,
+                            Description = "Somebody will want me now! Yay"
+                        })
+                        .WithTable("Books")
+                        .AddColumn(x => x.Price)
+                        .AddColumn(x => x.Description)
+                        .Update()
+                        .Where(x => x.ISBN == isbn)
+                        .Commit(conn);
+
+                }
+
+                trans.Complete();
+            }
 
 
-            int updatedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
 
             Assert.IsTrue(updatedRecords == 1);
             Assert.AreEqual(100, _db.Books.Single(x => x.ISBN == isbn).Price);
@@ -138,26 +157,33 @@ namespace SqlBulkTools.IntegrationTests
 
             var bookToTest = books[5];
             var isbn = bookToTest.ISBN;
+            int updatedRecords = 0;
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+                    updatedRecords = bulk.Setup<Book>()
+                        .ForSimpleUpdateQuery(new Book() { Price = 100, WarehouseId = 5 })
+                        .WithTable("Books")
+                        .AddColumn(x => x.Price)
+                        .AddColumn(x => x.WarehouseId)
+                        .Update()
+                        .Where(x => x.ISBN == isbn)
+                        .And(x => x.Price == 15)
+                        .Commit(conn);
+                }
 
-            bulk.Setup<Book>()
-                .ForSimpleUpdateQuery(new Book() { Price = 100, WarehouseId = 5 })
-                .WithTable("Books")
-                .AddColumn(x => x.Price)
-                .AddColumn(x => x.WarehouseId)
-                .Update()
-                .Where(x => x.ISBN == isbn)
-                .And(x => x.Price == 15);
-
-
-            int updatedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.AreEqual(1, updatedRecords);
             Assert.AreEqual(100, _db.Books.Single(x => x.ISBN == isbn).Price);
@@ -185,32 +211,36 @@ namespace SqlBulkTools.IntegrationTests
 
             var bookToTest = books[5];
             var isbn = bookToTest.ISBN;
+            int updatedRecords = 0;
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert();
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+                    // Update price to 100
 
-            // Update price to 100
+                    updatedRecords = bulk.Setup<Book>()
+                        .ForSimpleUpdateQuery(new Book() { Price = 100, WarehouseId = 5 })
+                        .WithTable("Books")
+                        .AddColumn(x => x.Price)
+                        .AddColumn(x => x.WarehouseId)
+                        .Update()
+                        .Where(x => x.ISBN == isbn)
+                        .And(x => x.Price == 16)
+                        .Commit(conn);
+                }
 
-            bulk.Setup<Book>()
-                .ForSimpleUpdateQuery(new Book() { Price = 100, WarehouseId = 5 })
-                .WithTable("Books")
-                .AddColumn(x => x.Price)
-                .AddColumn(x => x.WarehouseId)
-                .Update()
-                .Where(x => x.ISBN == isbn)
-                .And(x => x.Price == 16);
-
-
-            int updatedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.IsTrue(updatedRecords == 0);
-            Assert.AreNotEqual(100, _db.Books.Single(x => x.ISBN == isbn).Price);
-            Assert.AreNotEqual(5, _db.Books.Single(x => x.ISBN == isbn).WarehouseId);
         }
 
         [Test]
@@ -223,22 +253,32 @@ namespace SqlBulkTools.IntegrationTests
             List<Book> books = _randomizer.GetRandomCollection(30);
 
             var bookIsbn = books[5].ISBN;
+            int deletedRecords = 0;
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+                    deletedRecords = bulk.Setup<Book>()
+                        .ForSimpleDeleteQuery()
+                        .WithTable("Books")
+                        .Delete()
+                        .Where(x => x.ISBN == bookIsbn)
+                        .Commit(conn);
 
-            bulk.Setup<Book>()
-                .ForSimpleDeleteQuery()
-                .WithTable("Books")
-                .Delete()
-                .Where(x => x.ISBN == bookIsbn);
+                }
 
-            int deletedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
+
 
             Assert.IsTrue(deletedRecords == 1);
             Assert.AreEqual(29, _db.Books.Count());
@@ -259,23 +299,33 @@ namespace SqlBulkTools.IntegrationTests
 
             List<Book> books = _randomizer.GetRandomCollection(30);
 
-            bulk.Setup<SchemaTest2>()
-                .ForCollection(col)
-                .WithTable("SchemaTest")
-                .WithSchema("AnotherSchema")
-                .AddAllColumns()
-                .BulkInsert();
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<SchemaTest2>()
+                        .ForCollection(col)
+                        .WithTable("SchemaTest")
+                        .WithSchema("AnotherSchema")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
 
-            bulk.Setup<SchemaTest2>()
-                .ForSimpleDeleteQuery()
-                .WithTable("SchemaTest")
-                .WithSchema("AnotherSchema")
-                .Delete()
-                .Where(x => x.ColumnA != null);
+                    bulk.Setup<SchemaTest2>()
+                        .ForSimpleDeleteQuery()
+                        .WithTable("SchemaTest")
+                        .WithSchema("AnotherSchema")
+                        .Delete()
+                        .Where(x => x.ColumnA != null)
+                        .Commit(conn);
 
-            int deletedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                }
+
+                trans.Complete();
+            }
+
 
             Assert.AreEqual(0, _db.SchemaTest2.Count());
         }
@@ -295,25 +345,30 @@ namespace SqlBulkTools.IntegrationTests
                 col.Add(new SchemaTest2() { ColumnA = null });
             }
 
-            List<Book> books = _randomizer.GetRandomCollection(30);
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    bulk.Setup<SchemaTest2>()
+                        .ForCollection(col)
+                        .WithTable("SchemaTest")
+                        .WithSchema("AnotherSchema")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            bulk.Setup<SchemaTest2>()
-                .ForCollection(col)
-                .WithTable("SchemaTest")
-                .WithSchema("AnotherSchema")
-                .AddAllColumns()
-                .BulkInsert();
+                    bulk.Setup<SchemaTest2>()
+                        .ForSimpleDeleteQuery()
+                        .WithTable("SchemaTest")
+                        .WithSchema("AnotherSchema")
+                        .Delete()
+                        .Where(x => x.ColumnA == null)
+                        .Commit(conn);
+                }
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
-
-            bulk.Setup<SchemaTest2>()
-                .ForSimpleDeleteQuery()
-                .WithTable("SchemaTest")
-                .WithSchema("AnotherSchema")
-                .Delete()
-                .Where(x => x.ColumnA == null);
-
-            int deletedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.AreEqual(0, _db.SchemaTest2.Count());
         }
@@ -337,23 +392,34 @@ namespace SqlBulkTools.IntegrationTests
                 }
             }
 
-            bulk.Setup<Book>()
-                .ForCollection(books)
-                .WithTable("Books")
-                .AddAllColumns()
-                .BulkInsert();
+            int deletedRecords = 0;
 
-            bulk.CommitTransaction("SqlBulkToolsTest");
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
 
-            bulk.Setup<Book>()
-                .ForSimpleDeleteQuery()
-                .WithTable("Books")
-                .Delete()
-                .Where(x => x.WarehouseId == 1)
-                .And(x => x.Price >= 100)
-                .And(x => x.Description == null);
+                    bulk.Setup<Book>()
+                        .ForCollection(books)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .BulkInsert()
+                        .Commit(conn);
 
-            int deletedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                    deletedRecords = bulk.Setup<Book>()
+                        .ForSimpleDeleteQuery()
+                        .WithTable("Books")
+                        .Delete()
+                        .Where(x => x.WarehouseId == 1)
+                        .And(x => x.Price >= 100)
+                        .And(x => x.Description == null)
+                        .Commit(conn);
+
+                }
+
+                trans.Complete();
+            }
 
             Assert.AreEqual(5, deletedRecords);
             Assert.AreEqual(25, _db.Books.Count());
@@ -365,19 +431,27 @@ namespace SqlBulkTools.IntegrationTests
             _db.Books.RemoveRange(_db.Books.ToList());
             _db.SaveChanges();
             BulkOperations bulk = new BulkOperations();
+            int insertedRecords = 0;
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
+                {
+                    insertedRecords = bulk.Setup<Book>()
+                        .ForSimpleInsertQuery(new Book() { BestSeller = true, Description = "Greatest dad in the world", Title = "Hello World", ISBN = "1234567", Price = 23.99M })
+                        .WithTable("Books")
+                        .AddColumn(x => x.Title)
+                        .AddColumn(x => x.ISBN)
+                        .AddColumn(x => x.BestSeller)
+                        .AddColumn(x => x.Description)
+                        .AddColumn(x => x.Price)
+                        .Insert()
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(conn);
+                }
 
-            bulk.Setup<Book>()
-                .ForSimpleInsertQuery(new Book() { BestSeller = true, Description = "Greatest dad in the world", Title = "Hello World", ISBN = "1234567", Price = 23.99M })
-                .WithTable("Books")
-                .AddColumn(x => x.Title)
-                .AddColumn(x => x.ISBN)
-                .AddColumn(x => x.BestSeller)
-                .AddColumn(x => x.Description)
-                .AddColumn(x => x.Price)
-                .Insert()
-                .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput);
-
-            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                trans.Complete();
+            }
 
             Assert.AreEqual(1, insertedRecords);
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
@@ -389,22 +463,31 @@ namespace SqlBulkTools.IntegrationTests
             _db.Books.RemoveRange(_db.Books.ToList());
             _db.SaveChanges();
             BulkOperations bulk = new BulkOperations();
-
-            bulk.Setup<Book>()
-                .ForSimpleInsertQuery(new Book()
+            int insertedRecords = 0;
+            using (TransactionScope trans = new TransactionScope())
+            {
+                using (SqlConnection conn = new SqlConnection(ConfigurationManager
+                    .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
-                    BestSeller = true,
-                    Description = "Greatest dad in the world",
-                    Title = "Hello World",
-                    ISBN = "1234567",
-                    Price = 23.99M
-                })
-                .WithTable("Books")
-                .AddAllColumns()
-                .Insert()
-                .SetIdentityColumn(x => x.Id);
+                    insertedRecords = bulk.Setup<Book>()
+                        .ForSimpleInsertQuery(new Book()
+                        {
+                            BestSeller = true,
+                            Description = "Greatest dad in the world",
+                            Title = "Hello World",
+                            ISBN = "1234567",
+                            Price = 23.99M
+                        })
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .Insert()
+                        .SetIdentityColumn(x => x.Id)
+                        .Commit(conn);
 
-            int insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
+                }
+
+                trans.Complete();
+            }
 
             Assert.AreEqual(1, insertedRecords);
             Assert.IsNotNull(_db.Books.SingleOrDefault(x => x.ISBN == "1234567"));
@@ -419,8 +502,7 @@ namespace SqlBulkTools.IntegrationTests
             {
                 using (SqlConnection con = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
-                {
-                                       
+                {                                     
                     var bulk = new BulkOperations();
                     bulk.Setup<Book>()
                     .ForSimpleUpsertQuery(new Book()
@@ -452,37 +534,34 @@ namespace SqlBulkTools.IntegrationTests
             _db.Books.RemoveRange(_db.Books.ToList());
             _db.SaveChanges();
             BulkOperations bulk = new BulkOperations();
-            int insertedRecords = default(int);
 
-            bulk.Setup<Book>()
-                .ForSimpleInsertQuery(new Book()
-                {
-                    BestSeller = true,
-                    Description = "Greatest dad in the world",
-                    Title = "Hello World",
-                    ISBN = "1234567",
-                    Price = 23.99M
-                })
-                .WithTable("Books")
-                .AddAllColumns()
-                .Insert()
-                .SetIdentityColumn(x => x.Id);
-
-            insertedRecords = bulk.CommitTransaction("SqlBulkToolsTest");
-
-            Assert.IsTrue(insertedRecords == 1);
-
-            //TODO use output identity column
-            var insertedId = _db.Books.First().Id;
             using (TransactionScope trans = new TransactionScope())
             {
                 using (SqlConnection con = new SqlConnection(ConfigurationManager
                     .ConnectionStrings["SqlBulkToolsTest"].ConnectionString))
                 {
+
+                    Book book = new Book()
+                    {
+                        BestSeller = true,
+                        Description = "Greatest dad in the world",
+                        Title = "Hello World",
+                        ISBN = "1234567",
+                        Price = 23.99M
+                    };
+
+                    bulk.Setup<Book>()
+                        .ForSimpleInsertQuery(book)
+                        .WithTable("Books")
+                        .AddAllColumns()
+                        .Insert()
+                        .SetIdentityColumn(x => x.Id, ColumnDirection.InputOutput)
+                        .Commit(con);
+
                     bulk.Setup<Book>()
                     .ForSimpleUpsertQuery(new Book()
                     {
-                        Id = insertedId,
+                        Id = book.Id,
                         BestSeller = true,
                         Description = "Greatest dad in the world",
                         Title = "Hello Greggo",
