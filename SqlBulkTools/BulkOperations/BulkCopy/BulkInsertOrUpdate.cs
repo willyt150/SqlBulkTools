@@ -165,7 +165,7 @@ namespace SqlBulkTools
 				conn.Open();
 				handleConnectionInternally = true;
 			}
-			var dtCols = BulkOperationsHelper.GetDatabaseSchema( conn, _schema, _tableName );
+			var dtCols = BulkOperationsHelper.GetDatabaseSchema( conn, _schema, _tableName, transaction );
 
 			bool handleTransactionInternally = false;
 			if ( transaction == null )
@@ -319,7 +319,7 @@ namespace SqlBulkTools
 				await conn.OpenAsync();
 				handleConnectionInternally = true;
 			}
-			var dtCols = BulkOperationsHelper.GetDatabaseSchema( conn, _schema, _tableName );
+			var dtCols = BulkOperationsHelper.GetDatabaseSchema( conn, _schema, _tableName, transaction );
 			bool handleTransactionInternally = false;
 			if ( transaction == null )
 			{
